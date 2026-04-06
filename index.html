@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#06060F" />
+  <meta name="theme-color" content="#05050E" />
   <title>콕콕 — 좋아하는 마음, 살짝 찔러보기</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
@@ -15,15 +15,15 @@
 </head>
 <body>
 
-  <!-- Atmospheric background layers -->
-  <div class="bg-mesh"></div>
+  <!-- Background layers -->
+  <div class="bg-gradient"></div>
   <div class="bg-particles">
-    <span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
   </div>
   <div class="bg-noise"></div>
 
-  <!-- SVG defs for heart icon -->
+  <!-- SVG defs -->
   <svg style="position:absolute;width:0;height:0" aria-hidden="true">
     <defs>
       <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -35,18 +35,21 @@
 
   <div class="app">
 
-    <!-- Step 0: Splash — Glowing Orb -->
+    <!-- Step 0: Splash -->
     <div class="step splash active" id="step-0">
-      <div class="splash-orb-wrap stagger-1" id="splash-orb" role="button" tabindex="0" aria-label="Start">
+      <div class="splash-orb-wrap" id="splash-orb" role="button" tabindex="0" aria-label="시작하기">
         <div class="splash-orb"></div>
       </div>
-      <div class="title title-glow stagger-2">콕콕</div>
-      <p class="tagline stagger-3">좋아하는 마음, 살짝 찔러보기</p>
-      <p class="splash-hint stagger-4">touch to start</p>
+      <div class="title">콕콕</div>
+      <p class="tagline">좋아하는 마음, 살짝 찔러보기</p>
+      <p class="splash-hint">touch to start</p>
     </div>
 
     <!-- Step 1: My Name -->
     <div class="step" id="step-1">
+      <button class="btn-back" id="back-1" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <h2 class="question stagger-1">당신의<br/>이름은?</h2>
       <div class="input-group stagger-2">
         <input type="text" class="input-field" id="input-name"
@@ -58,6 +61,9 @@
 
     <!-- Step 2: Phone Verify -->
     <div class="step" id="step-2">
+      <button class="btn-back" id="back-2" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <h2 class="question stagger-1">전화번호를<br/>알려주세요</h2>
       <div class="input-group stagger-2">
         <div class="verify-row">
@@ -80,6 +86,9 @@
 
     <!-- Step 3: Target + Hint -->
     <div class="step" id="step-3">
+      <button class="btn-back" id="back-3" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <h2 class="question stagger-1">그 사람의<br/>번호는?</h2>
       <div class="input-group stagger-2">
         <input type="tel" class="input-field" id="input-target"

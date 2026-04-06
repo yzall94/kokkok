@@ -192,16 +192,6 @@
     ripple.addEventListener("animationend", () => ripple.remove());
   }
 
-  // Add ripple keyframe dynamically
-  const rippleStyle = document.createElement("style");
-  rippleStyle.textContent = `
-    @keyframes rippleOut {
-      0% { width: 4px; height: 4px; opacity: 1; }
-      100% { width: 200px; height: 200px; opacity: 0; }
-    }
-  `;
-  document.head.appendChild(rippleStyle);
-
   // --- Reset ---
   function resetApp() {
     inputName.value = "";
@@ -238,6 +228,11 @@
         goStep(1);
       }
     });
+
+    // Back buttons
+    document.getElementById("back-1").addEventListener("click", () => goStep(0));
+    document.getElementById("back-2").addEventListener("click", () => goStep(1));
+    document.getElementById("back-3").addEventListener("click", () => goStep(2));
 
     // Step 1: Name input
     inputName.addEventListener("input", () => {
