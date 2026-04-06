@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#FF6B8A" />
+  <title>콕콕 — 좋아하는 마음, 살짝 찔러보기</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Step 0: Splash -->
+    <div class="step active" id="step-0">
+      <div>
+        <div class="title">콕콕</div>
+        <p class="tagline">좋아하는 마음, 살짝 찔러보기</p>
+      </div>
+      <button class="btn-primary mt-48" id="btn-start">시작하기</button>
+    </div>
+
+    <!-- Step 1: My Name -->
+    <div class="step" id="step-1">
+      <div>
+        <h2 class="question">당신의 이름은?</h2>
+        <div class="input-group">
+          <input type="text" class="input-field" id="input-name"
+                 placeholder="이름을 입력하세요" maxlength="20" autocomplete="off" />
+        </div>
+      </div>
+      <button class="btn-primary mt-32" id="btn-name-next" disabled>다음</button>
+    </div>
+
+    <!-- Step 2: Phone Verify -->
+    <div class="step" id="step-2">
+      <div>
+        <h2 class="question">전화번호를 알려주세요</h2>
+        <div class="input-group">
+          <div class="verify-row">
+            <input type="tel" class="input-field" id="input-phone"
+                   placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
+            <button class="btn-inline" id="btn-send-code">인증번호 받기</button>
+          </div>
+          <div id="phone-status" class="status-msg"></div>
+        </div>
+        <div class="code-group" id="code-group">
+          <div class="input-group">
+            <input type="tel" class="code-input" id="input-code"
+                   placeholder="000000" maxlength="6" autocomplete="off" />
+            <div id="code-status" class="status-msg"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary mt-32" id="btn-phone-next" disabled>다음</button>
+    </div>
+
+    <!-- Step 3: Target + Hint -->
+    <div class="step" id="step-3">
+      <div>
+        <h2 class="question">그 사람의 번호는?</h2>
+        <div class="input-group">
+          <input type="tel" class="input-field" id="input-target"
+                 placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
+        </div>
+        <div class="input-group mt-16">
+          <label>힌트 (선택사항)</label>
+          <textarea class="hint-field" id="input-hint"
+                    placeholder="당신이 누군지 알 수 있는 힌트를 남겨보세요..."
+                    maxlength="100"></textarea>
+          <div class="char-counter"><span id="hint-count">0</span>/100</div>
+        </div>
+      </div>
+      <button class="btn-primary mt-32" id="btn-submit">콕! 💗</button>
+    </div>
+
+    <!-- Step 4: Complete -->
+    <div class="step" id="step-4">
+      <div class="text-center">
+        <div class="heart">💗</div>
+        <h2 class="question">콕! 전달했어요</h2>
+        <p class="subtitle">상대방에게 알림이 전송됐어요.<br/>서로 마음이 같다면, 연결될 거예요.</p>
+      </div>
+      <button class="btn-secondary mt-48" id="btn-reset">한 번 더 콕콕</button>
+    </div>
+
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
