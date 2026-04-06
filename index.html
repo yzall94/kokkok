@@ -37,12 +37,14 @@
 
     <!-- Step 0: Splash -->
     <div class="step splash active" id="step-0">
-      <div class="splash-orb-wrap" id="splash-orb" role="button" tabindex="0" aria-label="시작하기">
-        <div class="splash-orb"></div>
+      <div class="step-content">
+        <div class="splash-orb-wrap" id="splash-orb" role="button" tabindex="0" aria-label="시작하기">
+          <div class="splash-orb"></div>
+        </div>
+        <div class="title">콕콕</div>
+        <p class="tagline">좋아하는 마음, 살짝 찔러보기</p>
+        <p class="splash-hint">touch to start</p>
       </div>
-      <div class="title">콕콕</div>
-      <p class="tagline">좋아하는 마음, 살짝 찔러보기</p>
-      <p class="splash-hint">touch to start</p>
     </div>
 
     <!-- Step 1: My Name -->
@@ -50,13 +52,14 @@
       <button class="btn-back" id="back-1" aria-label="뒤로">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <h2 class="question stagger-1">당신의 이름은?</h2>
-      <div class="input-group stagger-2">
-        <input type="text" class="input-field" id="input-name"
-               placeholder="이름을 입력하세요" maxlength="20" autocomplete="off" />
+      <div class="step-content">
+        <h2 class="question stagger-1">당신의 이름은?</h2>
+        <div class="input-group stagger-2">
+          <input type="text" class="input-field" id="input-name"
+                 placeholder="이름을 입력하세요" maxlength="20" autocomplete="off" />
+        </div>
       </div>
-      <div style="flex:1"></div>
-      <button class="btn-primary stagger-3" id="btn-name-next" disabled>다음</button>
+      <button class="btn-primary step-btn stagger-3" id="btn-name-next" disabled>다음</button>
     </div>
 
     <!-- Step 2: Phone Verify -->
@@ -64,24 +67,25 @@
       <button class="btn-back" id="back-2" aria-label="뒤로">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <h2 class="question stagger-1">전화번호를 알려주세요</h2>
-      <div class="input-group stagger-2">
-        <div class="verify-row">
-          <input type="tel" class="input-field" id="input-phone"
-                 placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
-          <button class="btn-inline" id="btn-send-code">인증번호 받기</button>
+      <div class="step-content">
+        <h2 class="question stagger-1">전화번호를 알려주세요</h2>
+        <div class="input-group stagger-2">
+          <div class="verify-row">
+            <input type="tel" class="input-field" id="input-phone"
+                   placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
+            <button class="btn-inline" id="btn-send-code">인증번호 받기</button>
+          </div>
+          <div id="phone-status" class="status-msg"></div>
         </div>
-        <div id="phone-status" class="status-msg"></div>
-      </div>
-      <div class="code-group stagger-3" id="code-group">
-        <div class="input-group">
-          <input type="tel" class="code-input" id="input-code"
-                 placeholder="000000" maxlength="6" autocomplete="off" />
-          <div id="code-status" class="status-msg"></div>
+        <div class="code-group stagger-3" id="code-group">
+          <div class="input-group">
+            <input type="tel" class="code-input" id="input-code"
+                   placeholder="000000" maxlength="6" autocomplete="off" />
+            <div id="code-status" class="status-msg"></div>
+          </div>
         </div>
       </div>
-      <div style="flex:1"></div>
-      <button class="btn-primary stagger-4" id="btn-phone-next" disabled>다음</button>
+      <button class="btn-primary step-btn stagger-4" id="btn-phone-next" disabled>다음</button>
     </div>
 
     <!-- Step 3: Target + Hint -->
@@ -89,31 +93,33 @@
       <button class="btn-back" id="back-3" aria-label="뒤로">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <h2 class="question stagger-1">그 사람의 번호는?</h2>
-      <div class="input-group stagger-2">
-        <input type="tel" class="input-field" id="input-target"
-               placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
+      <div class="step-content">
+        <h2 class="question stagger-1">그 사람의 번호는?</h2>
+        <div class="input-group stagger-2">
+          <input type="tel" class="input-field" id="input-target"
+                 placeholder="010-0000-0000" maxlength="13" autocomplete="off" />
+        </div>
+        <div class="input-group stagger-3">
+          <label>힌트를 남길까요? (선택)</label>
+          <textarea class="hint-field" id="input-hint"
+                    placeholder="같은 반 안경 쓴 사람..."
+                    maxlength="100"></textarea>
+          <div class="char-counter"><span id="hint-count">0</span>/100</div>
+        </div>
       </div>
-      <div class="input-group stagger-3">
-        <label>힌트를 남길까요? (선택)</label>
-        <textarea class="hint-field" id="input-hint"
-                  placeholder="같은 반 안경 쓴 사람..."
-                  maxlength="100"></textarea>
-        <div class="char-counter"><span id="hint-count">0</span>/100</div>
-      </div>
-      <div style="flex:1"></div>
-      <button class="btn-primary stagger-4" id="btn-submit" disabled>콕!</button>
+      <button class="btn-primary step-btn stagger-4" id="btn-submit" disabled>콕!</button>
     </div>
 
     <!-- Step 4: Complete -->
     <div class="step" id="step-4">
-      <svg class="heart-icon stagger-1" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M16 28s-1.4-1.1-3.6-3C8.2 21.2 4 16.5 4 12.5 4 9.4 6.4 7 9.5 7c1.9 0 3.7 1 4.8 2.5h3.4C18.8 8 20.6 7 22.5 7 25.6 7 28 9.4 28 12.5c0 4-4.2 8.7-8.4 12.5C17.4 26.9 16 28 16 28z" fill="url(#heartGradient)"/>
-      </svg>
-      <h2 class="question stagger-2">콕! 전달했어요</h2>
-      <p class="subtitle stagger-3">상대방에게 메시지가 전달됐어요.<br/>서로 같은 마음이라면, 연결될 거예요.</p>
-      <div style="flex:1"></div>
-      <button class="btn-secondary stagger-4" id="btn-reset">한 번 더 콕콕</button>
+      <div class="step-content">
+        <svg class="heart-icon stagger-1" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 28s-1.4-1.1-3.6-3C8.2 21.2 4 16.5 4 12.5 4 9.4 6.4 7 9.5 7c1.9 0 3.7 1 4.8 2.5h3.4C18.8 8 20.6 7 22.5 7 25.6 7 28 9.4 28 12.5c0 4-4.2 8.7-8.4 12.5C17.4 26.9 16 28 16 28z" fill="url(#heartGradient)"/>
+        </svg>
+        <h2 class="question stagger-2">콕! 전달했어요</h2>
+        <p class="subtitle stagger-3">상대방에게 메시지가 전달됐어요.<br/>서로 같은 마음이라면, 연결될 거예요.</p>
+      </div>
+      <button class="btn-secondary step-btn stagger-4" id="btn-reset">한 번 더 콕콕</button>
     </div>
 
   </div>

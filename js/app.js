@@ -5,6 +5,11 @@
 (function () {
   "use strict";
 
+  // --- Demo Mode (no backend needed) ---
+  const DEMO = !window.supabaseClient ||
+    window.supabaseClient.SUPABASE_URL === "YOUR_SUPABASE_URL" ||
+    location.search.includes("demo");
+
   // --- State ---
   let currentStep = 0;
   let verificationToken = null;
@@ -33,7 +38,6 @@
     steps[step].classList.add("active");
     currentStep = step;
 
-    // Auto-focus first input after transition
     setTimeout(() => {
       const firstInput = steps[step].querySelector("input, textarea");
       if (firstInput) firstInput.focus();
@@ -75,6 +79,16 @@
     btnSendCode.innerHTML = '<span class="spinner"></span>';
     hideStatus(phoneStatus);
 
+    if (DEMO) {
+      await new Promise((r) => setTimeout(r, 800));
+      codeGroup.classList.add("show");
+      showStatus(phoneStatus, "[DEMO] 인증번호: 000000", "success");
+      btnSendCode.disabled = false;
+      btnSendCode.textContent = "재전송";
+      inputCode.focus();
+      return;
+    }
+
     try {
       await supabaseClient.sendVerification(phone);
       codeGroup.classList.add("show");
@@ -96,6 +110,17 @@
 
     inputCode.disabled = true;
     hideStatus(codeStatus);
+
+    if (DEMO) {
+      await new Promise((r) => setTimeout(r, 500));
+      verificationToken = "demo-token";
+      showStatus(codeStatus, "[DEMO] 인증 완료!", "success");
+      btnPhoneNext.disabled = false;
+      inputPhone.disabled = true;
+      btnSendCode.disabled = true;
+      inputCode.disabled = true;
+      return;
+    }
 
     try {
       const result = await supabaseClient.verifyCode(phone, code);
@@ -125,6 +150,15 @@
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span class="spinner"></span>';
 
+    if (DEMO) {
+      await new Promise((r) => setTimeout(r, 1000));
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = "콕!";
+      goStep(4);
+      spawnParticles();
+      return;
+    }
+
     try {
       await supabaseClient.submitKokkok(
         senderName,
@@ -143,7 +177,7 @@
     }
   }
 
-  // --- Completion Particles (glowing orbs, not emoji) ---
+  // --- Completion Particles ---
   function spawnParticles() {
     const colors = [
       "rgba(255, 92, 138, 0.8)",
@@ -217,7 +251,8 @@
 
   // --- Event Listeners ---
   document.addEventListener("DOMContentLoaded", function () {
-    // Splash orb click → start
+    if (DEMO) console.log("%c[KokKok] DEMO MODE — no backend required", "color:#FF5C8A;font-weight:bold");
+
     splashOrb.addEventListener("click", (e) => {
       createRipple(e.clientX, e.clientY);
       setTimeout(() => goStep(1), 400);
@@ -234,13 +269,13 @@
     document.getElementById("back-2").addEventListener("click", () => goStep(1));
     document.getElementById("back-3").addEventListener("click", () => goStep(2));
 
-    // Step 1: Name input
+    // Step 1: Name
     inputName.addEventListener("input", () => {
       btnNameNext.disabled = inputName.value.trim().length === 0;
     });
     btnNameNext.addEventListener("click", () => goStep(2));
 
-    // Step 2: Phone verification
+    // Step 2: Phone
     inputPhone.addEventListener("input", () => {
       inputPhone.value = formatPhone(inputPhone.value);
     });
@@ -255,7 +290,7 @@
 
     btnPhoneNext.addEventListener("click", () => goStep(3));
 
-    // Step 3: Target phone + hint
+    // Step 3: Target
     inputTarget.addEventListener("input", () => {
       inputTarget.value = formatPhone(inputTarget.value);
       btnSubmit.disabled = !isValidPhone(inputTarget.value);
