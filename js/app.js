@@ -24,7 +24,7 @@
   const inputHint = document.getElementById("input-hint");
   const hintCount = document.getElementById("hint-count");
   const btnSubmit = document.getElementById("btn-submit");
-  const btnStart = document.getElementById("btn-start");
+  const splashOrb = document.getElementById("splash-orb");
   const btnReset = document.getElementById("btn-reset");
 
   // --- Step Navigation ---
@@ -33,11 +33,11 @@
     steps[step].classList.add("active");
     currentStep = step;
 
-    // Auto-focus first input in the new step
-    requestAnimationFrame(() => {
+    // Auto-focus first input after transition
+    setTimeout(() => {
       const firstInput = steps[step].querySelector("input, textarea");
       if (firstInput) firstInput.focus();
-    });
+    }, 400);
   }
 
   // --- Phone Formatting ---
@@ -134,30 +134,73 @@
         verificationToken
       );
       goStep(4);
-      spawnHeartParticles();
+      spawnParticles();
     } catch (err) {
       alert(err.message || "전송에 실패했어요. 다시 시도해주세요.");
     } finally {
       btnSubmit.disabled = false;
-      btnSubmit.textContent = "콕! 💗";
+      btnSubmit.textContent = "콕!";
     }
   }
 
-  // --- Heart Particles ---
-  function spawnHeartParticles() {
-    const hearts = ["💗", "💖", "💕", "❤️", "💘"];
-    for (let i = 0; i < 15; i++) {
+  // --- Completion Particles (glowing orbs, not emoji) ---
+  function spawnParticles() {
+    const colors = [
+      "rgba(255, 92, 138, 0.8)",
+      "rgba(255, 138, 175, 0.7)",
+      "rgba(255, 122, 110, 0.6)",
+      "rgba(255, 184, 108, 0.5)",
+      "rgba(255, 200, 200, 0.4)",
+    ];
+
+    for (let i = 0; i < 20; i++) {
       const el = document.createElement("div");
       el.className = "particle";
-      el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-      el.style.left = Math.random() * 100 + "vw";
-      el.style.top = 60 + Math.random() * 30 + "vh";
-      el.style.animationDelay = Math.random() * 1.2 + "s";
-      el.style.fontSize = 16 + Math.random() * 20 + "px";
+      const size = 4 + Math.random() * 12;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      el.style.cssText = `
+        left: ${15 + Math.random() * 70}%;
+        bottom: ${10 + Math.random() * 20}%;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        box-shadow: 0 0 ${size * 2}px ${color};
+        animation-duration: ${2 + Math.random() * 3}s;
+        animation-delay: ${Math.random() * 1.5}s;
+      `;
       document.body.appendChild(el);
       el.addEventListener("animationend", () => el.remove());
     }
   }
+
+  // --- Orb ripple on touch ---
+  function createRipple(x, y) {
+    const ripple = document.createElement("div");
+    ripple.style.cssText = `
+      position: fixed;
+      left: ${x}px; top: ${y}px;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid rgba(255, 92, 138, 0.6);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 50;
+      animation: rippleOut 800ms ease-out forwards;
+    `;
+    document.body.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove());
+  }
+
+  // Add ripple keyframe dynamically
+  const rippleStyle = document.createElement("style");
+  rippleStyle.textContent = `
+    @keyframes rippleOut {
+      0% { width: 4px; height: 4px; opacity: 1; }
+      100% { width: 200px; height: 200px; opacity: 0; }
+    }
+  `;
+  document.head.appendChild(rippleStyle);
 
   // --- Reset ---
   function resetApp() {
@@ -174,6 +217,7 @@
     btnSendCode.textContent = "인증번호 받기";
     btnPhoneNext.disabled = true;
     btnSubmit.disabled = true;
+    btnSubmit.textContent = "콕!";
     codeGroup.classList.remove("show");
     hideStatus(phoneStatus);
     hideStatus(codeStatus);
@@ -183,8 +227,17 @@
 
   // --- Event Listeners ---
   document.addEventListener("DOMContentLoaded", function () {
-    // Start button
-    btnStart.addEventListener("click", () => goStep(1));
+    // Splash orb click → start
+    splashOrb.addEventListener("click", (e) => {
+      createRipple(e.clientX, e.clientY);
+      setTimeout(() => goStep(1), 400);
+    });
+    splashOrb.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        goStep(1);
+      }
+    });
 
     // Step 1: Name input
     inputName.addEventListener("input", () => {
@@ -210,8 +263,7 @@
     // Step 3: Target phone + hint
     inputTarget.addEventListener("input", () => {
       inputTarget.value = formatPhone(inputTarget.value);
-      const valid = isValidPhone(inputTarget.value);
-      btnSubmit.disabled = !valid;
+      btnSubmit.disabled = !isValidPhone(inputTarget.value);
     });
 
     inputHint.addEventListener("input", () => {
