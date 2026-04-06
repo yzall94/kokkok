@@ -47,7 +47,10 @@ serve(async (req) => {
       );
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    // Cryptographically secure random code
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const code = String(100000 + (array[0] % 900000));
 
     await supabase.from("verification_codes").insert({
       phone_hash: phoneHash,

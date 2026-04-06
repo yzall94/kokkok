@@ -4,8 +4,7 @@
    Mobile-first, max-width 430px
    ============================================ */
 
-/* --- Pretendard Font --- */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+/* Pretendard font loaded via <link> in HTML */
 
 /* --- Reset --- */
 *, *::before, *::after {

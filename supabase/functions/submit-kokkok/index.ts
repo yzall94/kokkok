@@ -68,8 +68,31 @@ serve(async (req) => {
       );
     }
 
+    // Validate inputs
+    if (!sender_name || sender_name.trim().length === 0 || sender_name.length > 20) {
+      return new Response(
+        JSON.stringify({ error: "Invalid name" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const cleanSenderPhone = sender_phone.replace(/-/g, "");
     const cleanTargetPhone = target_phone.replace(/-/g, "");
+
+    if (!/^01[016789]\d{7,8}$/.test(cleanTargetPhone)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid target phone number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Prevent self-kokkok
+    if (cleanSenderPhone === cleanTargetPhone) {
+      return new Response(
+        JSON.stringify({ error: "Cannot send to your own number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (payload.phone !== cleanSenderPhone) {
       return new Response(
@@ -111,6 +134,7 @@ serve(async (req) => {
       .eq("sender_phone_hash", targetHash)
       .eq("target_phone_hash", senderHash)
       .eq("matched", false)
+      .gte("expires_at", new Date().toISOString())
       .neq("id", entryId)
       .limit(1);
 
