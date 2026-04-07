@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { getReveal, type RevealData } from '@/lib/api'
 
 // ─── HeartIcon (inline, no import needed across app boundary) ─────────────────
@@ -92,7 +93,7 @@ function ErrorView({ message }: { message: string }) {
       </div>
 
       <div className="step step-delay-2">
-        <a
+        <Link
           href="/"
           className="btn-primary"
           style={{
@@ -102,7 +103,7 @@ function ErrorView({ message }: { message: string }) {
           }}
         >
           콕콕 시작하기
-        </a>
+        </Link>
       </div>
     </div>
   )
@@ -165,7 +166,7 @@ function MatchedView({ data }: { data: RevealData }) {
       )}
 
       <div className="step step-delay-4 mt-6">
-        <a
+        <Link
           href="/"
           className="btn-secondary"
           style={{
@@ -175,7 +176,7 @@ function MatchedView({ data }: { data: RevealData }) {
           }}
         >
           나도 콕콕하러 가기
-        </a>
+        </Link>
       </div>
     </div>
   )
@@ -227,7 +228,7 @@ function NotMatchedView({ data }: { data: RevealData }) {
       </div>
 
       <div className="step step-delay-4 mt-6">
-        <a
+        <Link
           href="/"
           className="btn-primary"
           style={{
@@ -237,7 +238,7 @@ function NotMatchedView({ data }: { data: RevealData }) {
           }}
         >
           나도 콕콕하러 가기 💗
-        </a>
+        </Link>
       </div>
     </div>
   )

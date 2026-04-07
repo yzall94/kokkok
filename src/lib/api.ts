@@ -33,8 +33,9 @@ async function callEdgeFunction<T>(
 // Demo mode mock responses
 async function mockEdgeFunction<T>(
   fnName: string,
-  _body: object
+  _body?: object
 ): Promise<T> {
+  void _body
   await new Promise((r) => setTimeout(r, 800)) // Simulate latency
 
   switch (fnName) {
