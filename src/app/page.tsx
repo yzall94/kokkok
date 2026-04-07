@@ -395,51 +395,53 @@ function SplashStep({
   onAdmin: () => void
 }) {
   return (
-    <div className="step text-center">
-      <div className="step step-delay-1 mb-2">
-        <p className="section-label">안녕하세요, {session.name}님 👋</p>
-      </div>
+    <div className="splash-layout step text-center">
+      <div className="splash-main">
+        <div className="step step-delay-1 mb-2">
+          <p className="section-label">안녕하세요, {session.name}님 👋</p>
+        </div>
 
-      <div className="step step-delay-2">
-        <h1 className="title text-5xl mb-2">
-          <span className="gradient-text">콕콕</span>
-        </h1>
-        <p className="subtitle">익명으로 마음을 전하는 서비스</p>
-      </div>
+        <div className="step step-delay-2">
+          <h1 className="title text-5xl mb-2">
+            <span className="gradient-text">콕콕</span>
+          </h1>
+          <p className="subtitle">익명으로 마음을 전하는 서비스</p>
+        </div>
 
-      <div
-        className="splash-orb-wrapper step step-delay-3"
-        onClick={onStart}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onStart()}
-        aria-label="시작하기"
-      >
-        <div className="splash-orb">
-          <div className="splash-orb-inner">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
-              <defs>
-                <filter id="orbHeartGlow">
-                  <feGaussianBlur stdDeviation="0.8" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <path
-                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                fill="rgba(255,255,255,0.92)"
-                filter="url(#orbHeartGlow)"
-              />
-            </svg>
+        <div
+          className="splash-orb-wrapper step step-delay-3"
+          onClick={onStart}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && onStart()}
+          aria-label="시작하기"
+        >
+          <div className="splash-orb">
+            <div className="splash-orb-inner">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <filter id="orbHeartGlow">
+                    <feGaussianBlur stdDeviation="0.8" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                  fill="rgba(255,255,255,0.92)"
+                  filter="url(#orbHeartGlow)"
+                />
+              </svg>
+            </div>
           </div>
         </div>
+
+        <p className="touch-hint step step-delay-4">눌러서 시작</p>
       </div>
 
-      <p className="touch-hint step step-delay-4">눌러서 시작</p>
-
-      <div className="step step-delay-5" style={{ marginTop: 'clamp(60px, 15vh, 120px)' }}>
+      <div className="splash-bottom step step-delay-5">
         <button
           type="button"
           className="btn-admin-link"
