@@ -439,7 +439,7 @@ function SplashStep({
 
       <p className="touch-hint step step-delay-4">눌러서 시작</p>
 
-      <div className="step step-delay-5" style={{ marginTop: '120px' }}>
+      <div className="step step-delay-5" style={{ marginTop: 'clamp(60px, 15vh, 120px)' }}>
         <button
           type="button"
           className="btn-admin-link"
