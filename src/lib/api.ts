@@ -39,13 +39,6 @@ async function mockEdgeFunction<T>(
   await new Promise((r) => setTimeout(r, 800)) // Simulate latency
 
   switch (fnName) {
-    case 'send-verification':
-      return { success: true } as T
-    case 'verify-code':
-      return {
-        verified: true,
-        token: 'demo-token-' + Math.random().toString(36).slice(2),
-      } as T
     case 'submit-kokkok':
       return {
         success: true,
@@ -63,22 +56,41 @@ async function mockEdgeFunction<T>(
   }
 }
 
+// ─── Internal API call helper ────────────────────────────────────────────────
+
+async function callApi<T>(path: string, body: object): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(data.error || '요청에 실패했어요.')
+  }
+
+  return data as T
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function sendVerification(phone: string): Promise<{ success: boolean }> {
-  return callEdgeFunction('send-verification', { phone })
+  return callApi('/api/send-verification', { phone })
 }
 
 export interface VerifyResult {
   verified: boolean
   token: string
+  error?: string
 }
 
 export async function verifyCode(
   phone: string,
   code: string
 ): Promise<VerifyResult> {
-  return callEdgeFunction('verify-code', { phone, code })
+  return callApi('/api/verify-code', { phone, code })
 }
 
 export interface SubmitParams {
