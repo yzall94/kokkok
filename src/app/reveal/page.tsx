@@ -223,9 +223,6 @@ function MatchedView({ data }: { data: RevealData }) {
         >
           나도 콕콕하러 가기
         </Link>
-        <div className="text-center mt-4">
-          <ShareButton />
-        </div>
       </div>
     </div>
   )
@@ -288,9 +285,6 @@ function NotMatchedView({ data }: { data: RevealData }) {
         >
           나도 콕콕하러 가기 💗
         </Link>
-        <div className="text-center mt-4">
-          <ShareButton />
-        </div>
       </div>
     </div>
   )
@@ -347,6 +341,10 @@ export default function RevealPage() {
           <Suspense fallback={<LoadingView />}>
             <RevealContent />
           </Suspense>
+        </div>
+
+        <div className="share-footer">
+          <ShareButton />
         </div>
       </main>
     </>

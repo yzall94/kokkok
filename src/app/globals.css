@@ -649,6 +649,11 @@ textarea.input {
 .btn-share .share-copied {
   color: var(--accent);
 }
+.share-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding-bottom: 8px;
+}
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {

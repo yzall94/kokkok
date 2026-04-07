@@ -439,7 +439,7 @@ function SplashStep({
 
       <p className="touch-hint step step-delay-4">눌러서 시작</p>
 
-      <div className="step step-delay-5 mt-28">
+      <div className="step step-delay-5" style={{ marginTop: '120px' }}>
         <button
           type="button"
           className="btn-admin-link"
@@ -451,9 +451,6 @@ function SplashStep({
           </svg>
           마이페이지
         </button>
-        <div className="mt-4">
-          <ShareButton />
-        </div>
       </div>
     </div>
   )
@@ -613,9 +610,6 @@ function DoneStep({
         <button className="btn-primary" type="button" onClick={onAgain}>
           한 번 더 콕콕 💗
         </button>
-        <div className="text-center mt-3">
-          <ShareButton />
-        </div>
       </div>
     </div>
   )
@@ -808,7 +802,6 @@ function AdminStep({
       <hr className="divider step step-delay-4" />
 
       <div className="step step-delay-5 text-center space-y-3">
-        <ShareButton />
         <button
           type="button"
           className="btn-ghost"
@@ -904,6 +897,10 @@ export default function HomePage() {
               }}
             />
           )}
+        </div>
+
+        <div className="share-footer">
+          <ShareButton />
         </div>
       </main>
     </>
