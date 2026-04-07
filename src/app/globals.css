@@ -667,9 +667,47 @@ textarea.input {
   color: var(--accent);
 }
 .share-footer {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
   margin-top: 20px;
   padding-bottom: 8px;
+}
+
+/* ── Stats Banner ─────────────────────────────────────────────────────────── */
+.stats-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  height: 32px;
+  overflow: hidden;
+}
+.stats-slider {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  text-align: center;
+}
+.stats-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.stats-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.stats-hidden {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */

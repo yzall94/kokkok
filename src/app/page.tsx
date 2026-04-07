@@ -45,6 +45,10 @@ const IS_DEMO =
   !process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL === 'YOUR_SUPABASE_URL'
 
+// Stats display calibration (from environment)
+const STATS_CALIBRATION_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '0', 10)
+const STATS_CALIBRATION_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '0', 10)
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function HeartIcon({ size = 32, className = '', color }: { size?: number; className?: string; color?: string }) {
@@ -125,6 +129,77 @@ function ShareButton() {
           공유하기
         </>
       )}
+    </button>
+  )
+}
+
+function StatsBanner() {
+  const [stats, setStats] = useState<{ kokkoks: number; couples: number } | null>(null)
+  const [showFirst, setShowFirst] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (IS_DEMO) {
+        setStats({ kokkoks: 3 + STATS_CALIBRATION_A, couples: 1 + STATS_CALIBRATION_B })
+        return
+      }
+
+      try {
+        const db = getSupabase()
+        if (!db) return
+
+        const [kokkokRes, coupleRes] = await Promise.all([
+          db.from('kokkok_entries').select('id', { count: 'exact', head: true }),
+          db.from('kokkok_entries').select('id', { count: 'exact', head: true }).eq('matched', true),
+        ])
+
+        const kokkokCount = kokkokRes.count ?? 0
+        const coupleCount = Math.floor((coupleRes.count ?? 0) / 2)
+
+        setStats({
+          kokkoks: kokkokCount + STATS_CALIBRATION_A,
+          couples: coupleCount + STATS_CALIBRATION_B,
+        })
+      } catch {
+        // Silently fail — banner just won't show
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => setShowFirst((prev) => !prev), 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (!stats) return null
+
+  return (
+    <div className="stats-banner">
+      <div className="stats-slider">
+        <span className={`stats-item ${showFirst ? 'stats-visible' : 'stats-hidden'}`}>
+          💗 {stats.kokkoks}명이 콕콕했어요
+        </span>
+        <span className={`stats-item ${!showFirst ? 'stats-visible' : 'stats-hidden'}`}>
+          💑 {stats.couples}명이 커플이 되었어요
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function FeedbackButton() {
+  return (
+    <button
+      type="button"
+      className="btn-share"
+      onClick={() => window.open('https://forms.gle/PLACEHOLDER', '_blank')}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      기능제안하기
     </button>
   )
 }
@@ -328,7 +403,7 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
                   전송 중…
                 </>
               ) : (
-                '인증번호 받기'
+                '시작하기'
               )}
             </button>
           </div>
@@ -397,8 +472,8 @@ function SplashStep({
   return (
     <div className="splash-layout step text-center">
       <div className="splash-main">
-        <div className="step step-delay-1 mb-2">
-          <p className="section-label">안녕하세요, {session.name}님 👋</p>
+        <div className="step step-delay-1">
+          <StatsBanner />
         </div>
 
         <div className="step step-delay-2">
@@ -451,7 +526,7 @@ function SplashStep({
             <circle cx="12" cy="8" r="4"/>
             <path d="M20 21a8 8 0 1 0-16 0"/>
           </svg>
-          마이페이지
+          내 콕콕 현황
         </button>
       </div>
     </div>
@@ -903,6 +978,7 @@ export default function HomePage() {
 
         <div className="share-footer">
           <ShareButton />
+          <FeedbackButton />
         </div>
       </main>
     </>
