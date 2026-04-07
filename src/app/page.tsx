@@ -83,6 +83,52 @@ function StatusMsg({ status }: { status: Status }) {
   )
 }
 
+function ShareButton() {
+  const [copied, setCopied] = useState(false)
+  const shareUrl = 'https://kokkok-nu.vercel.app'
+  const shareText = '익명으로 마음을 전해보세요 💗 콕콕'
+
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '콕콕', text: shareText, url: shareUrl })
+        return
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard API not available
+    }
+  }
+
+  return (
+    <button type="button" className="btn-share" onClick={handleShare}>
+      {copied ? (
+        <>
+          <span className="share-copied">✓</span>
+          <span className="share-copied">링크 복사됨!</span>
+        </>
+      ) : (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3"/>
+            <circle cx="6" cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          공유하기
+        </>
+      )}
+    </button>
+  )
+}
+
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <button className="back-btn" onClick={onClick} type="button">
@@ -405,6 +451,9 @@ function SplashStep({
           </svg>
           마이페이지
         </button>
+        <div className="mt-4">
+          <ShareButton />
+        </div>
       </div>
     </div>
   )
@@ -564,6 +613,9 @@ function DoneStep({
         <button className="btn-primary" type="button" onClick={onAgain}>
           한 번 더 콕콕 💗
         </button>
+        <div className="text-center mt-3">
+          <ShareButton />
+        </div>
       </div>
     </div>
   )
@@ -755,7 +807,8 @@ function AdminStep({
 
       <hr className="divider step step-delay-4" />
 
-      <div className="step step-delay-5 text-center">
+      <div className="step step-delay-5 text-center space-y-3">
+        <ShareButton />
         <button
           type="button"
           className="btn-ghost"
