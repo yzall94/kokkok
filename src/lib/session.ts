@@ -30,11 +30,9 @@ export function getSession(): Session | null {
   }
 }
 
-export function saveSession(session: Omit<Session, 'savedAt'>): void {
+export function saveSession(session: Session): void {
   if (typeof window === 'undefined') return
-
-  const full: Session = { ...session, savedAt: Date.now() }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(full))
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
 export function clearSession(): void {

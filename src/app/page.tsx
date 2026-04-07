@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import {
   sendVerification,
   verifyCode,
@@ -610,14 +610,20 @@ function AdminStep({
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('')
 
+      const db = getSupabase()
+      if (!db) {
+        setLoading(false)
+        return
+      }
+
       const [receivedRes, sentRes] = await Promise.all([
-        supabase
+        db
           .from('kokkok_entries')
           .select('id, hint_text, matched, created_at, reveal_token, match_id')
           .eq('target_phone_hash', phoneHash)
           .order('created_at', { ascending: false })
           .limit(20),
-        supabase
+        db
           .from('kokkok_entries')
           .select('id, hint_text, matched, created_at, reveal_token')
           .eq('sender_phone_hash', phoneHash)

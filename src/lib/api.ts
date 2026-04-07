@@ -5,7 +5,7 @@ const IS_DEMO = !SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL'
 
 async function callEdgeFunction<T>(
   fnName: string,
-  body: Record<string, unknown>
+  body: object
 ): Promise<T> {
   if (IS_DEMO) {
     return mockEdgeFunction<T>(fnName, body)
@@ -33,8 +33,7 @@ async function callEdgeFunction<T>(
 // Demo mode mock responses
 async function mockEdgeFunction<T>(
   fnName: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _body: Record<string, unknown>
+  _body: object
 ): Promise<T> {
   await new Promise((r) => setTimeout(r, 800)) // Simulate latency
 
