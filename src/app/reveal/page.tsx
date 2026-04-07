@@ -11,7 +11,7 @@ function HeartIcon({ size = 64, className = '' }: { size?: number; className?: s
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -23,7 +23,7 @@ function HeartIcon({ size = 64, className = '' }: { size?: number; className?: s
         </linearGradient>
       </defs>
       <path
-        d="M16 27.5C16 27.5 3 19.5 3 10.5C3 7.46 5.46 5 8.5 5C10.74 5 12.72 6.31 13.8 8.25C14.5 7 15.72 5 16 5C16.28 5 17.5 7 18.2 8.25C19.28 6.31 21.26 5 23.5 5C26.54 5 29 7.46 29 10.5C29 19.5 16 27.5 16 27.5Z"
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
         fill="url(#heartGradReveal)"
       />
     </svg>

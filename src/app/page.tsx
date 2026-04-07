@@ -47,25 +47,27 @@ const IS_DEMO =
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function HeartIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
+function HeartIcon({ size = 32, className = '', color }: { size?: number; className?: string; color?: string }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <defs>
-        <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FF5C8A" />
-          <stop offset="100%" stopColor="#FF7A6E" />
-        </linearGradient>
-      </defs>
+      {!color && (
+        <defs>
+          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF5C8A" />
+            <stop offset="100%" stopColor="#FF7A6E" />
+          </linearGradient>
+        </defs>
+      )}
       <path
-        d="M16 27.5C16 27.5 3 19.5 3 10.5C3 7.46 5.46 5 8.5 5C10.74 5 12.72 6.31 13.8 8.25C14.5 7 15.72 5 16 5C16.28 5 17.5 7 18.2 8.25C19.28 6.31 21.26 5 23.5 5C26.54 5 29 7.46 29 10.5C29 19.5 16 27.5 16 27.5Z"
-        fill="url(#heartGrad)"
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+        fill={color || "url(#heartGrad)"}
       />
     </svg>
   )
@@ -369,14 +371,10 @@ function SplashStep({
       >
         <div className="splash-orb">
           <div className="splash-orb-inner">
-            <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
               <defs>
-                <linearGradient id="orbHeartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fff" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="#ffd4e0" stopOpacity="0.8" />
-                </linearGradient>
                 <filter id="orbHeartGlow">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feGaussianBlur stdDeviation="0.8" result="blur" />
                   <feMerge>
                     <feMergeNode in="blur" />
                     <feMergeNode in="SourceGraphic" />
@@ -384,8 +382,8 @@ function SplashStep({
                 </filter>
               </defs>
               <path
-                d="M28 48C28 48 6 34 6 18C6 12.5 10.5 8 16 8C20 8 23.5 10.3 25.5 13.5C26.5 11.5 27.5 8 28 8C28.5 8 29.5 11.5 30.5 13.5C32.5 10.3 36 8 40 8C45.5 8 50 12.5 50 18C50 34 28 48 28 48Z"
-                fill="url(#orbHeartGrad)"
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                fill="rgba(255,255,255,0.92)"
                 filter="url(#orbHeartGlow)"
               />
             </svg>
@@ -395,17 +393,17 @@ function SplashStep({
 
       <p className="touch-hint step step-delay-4">눌러서 시작</p>
 
-      <div className="step step-delay-5 mt-8">
+      <div className="step step-delay-5 mt-16">
         <button
           type="button"
           className="btn-admin-link"
           onClick={onAdmin}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="8" r="4"/>
             <path d="M20 21a8 8 0 1 0-16 0"/>
           </svg>
-          내 콕콕 보기
+          마이페이지
         </button>
       </div>
     </div>
