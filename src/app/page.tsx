@@ -368,19 +368,44 @@ function SplashStep({
         aria-label="시작하기"
       >
         <div className="splash-orb">
-          <span className="splash-orb-emoji">💗</span>
+          <div className="splash-orb-inner">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+              <defs>
+                <linearGradient id="orbHeartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fff" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#ffd4e0" stopOpacity="0.8" />
+                </linearGradient>
+                <filter id="orbHeartGlow">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <path
+                d="M28 48C28 48 6 34 6 18C6 12.5 10.5 8 16 8C20 8 23.5 10.3 25.5 13.5C26.5 11.5 27.5 8 28 8C28.5 8 29.5 11.5 30.5 13.5C32.5 10.3 36 8 40 8C45.5 8 50 12.5 50 18C50 34 28 48 28 48Z"
+                fill="url(#orbHeartGrad)"
+                filter="url(#orbHeartGlow)"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 
       <p className="touch-hint step step-delay-4">눌러서 시작</p>
 
-      <div className="step step-delay-5 mt-10 pt-6 border-t border-white/5">
+      <div className="step step-delay-5 mt-8">
         <button
           type="button"
-          className="btn-ghost text-xs"
+          className="btn-admin-link"
           onClick={onAdmin}
         >
-          내 콕콕 보기 →
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M20 21a8 8 0 1 0-16 0"/>
+          </svg>
+          내 콕콕 보기
         </button>
       </div>
     </div>

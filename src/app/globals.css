@@ -197,6 +197,7 @@ textarea.input {
 .btn-primary {
   width: 100%;
   padding: 16px;
+  margin-top: 8px;
   border: none;
   border-radius: var(--radius-sm);
   font-family: inherit;
@@ -232,6 +233,7 @@ textarea.input {
 .btn-secondary {
   width: 100%;
   padding: 14px;
+  margin-top: 8px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   font-family: inherit;
@@ -307,24 +309,24 @@ textarea.input {
 
 .splash-orb {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 35%,
-    rgba(255, 122, 110, 0.8) 0%,
-    rgba(255, 92, 138, 0.9) 40%,
-    rgba(180, 40, 100, 0.7) 100%
-  );
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 180, 200, 0.6) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(255, 100, 120, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 92, 138, 0.95) 0%, rgba(200, 40, 80, 0.85) 100%);
   box-shadow:
-    0 0 60px rgba(255, 92, 138, 0.5),
-    0 0 120px rgba(255, 92, 138, 0.2),
-    inset 0 -20px 40px rgba(0, 0, 0, 0.2);
+    0 0 80px rgba(255, 92, 138, 0.5),
+    0 0 160px rgba(255, 92, 138, 0.15),
+    inset 0 2px 30px rgba(255, 255, 255, 0.15),
+    inset 0 -20px 40px rgba(0, 0, 0, 0.15);
   animation: orb-pulse 3s ease-in-out infinite, orb-glow 3s ease-in-out infinite;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .splash-orb:active {
@@ -340,11 +342,44 @@ textarea.input {
   animation: orb-glow 3s ease-in-out infinite;
 }
 
-.splash-orb-emoji {
-  font-size: 3.5rem;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
-  line-height: 1;
+.splash-orb-inner {
+  position: relative;
+  z-index: 1;
   pointer-events: none;
+  animation: orb-heart-float 3s ease-in-out infinite;
+}
+
+/* ── Admin link button (splash page) ──────────────────────────────────────── */
+.btn-admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  backdrop-filter: blur(8px);
+}
+
+.btn-admin-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 92, 138, 0.3);
+  color: var(--text-primary);
+}
+
+.btn-admin-link svg {
+  opacity: 0.6;
+  transition: opacity var(--transition);
+}
+
+.btn-admin-link:hover svg {
+  opacity: 1;
 }
 
 .touch-hint {
@@ -576,6 +611,11 @@ textarea.input {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+@keyframes orb-heart-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.05); }
 }
 
 @keyframes spin {
