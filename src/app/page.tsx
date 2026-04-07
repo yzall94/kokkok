@@ -393,7 +393,7 @@ function SplashStep({
 
       <p className="touch-hint step step-delay-4">눌러서 시작</p>
 
-      <div className="step step-delay-5 mt-16">
+      <div className="step step-delay-5 mt-28">
         <button
           type="button"
           className="btn-admin-link"
