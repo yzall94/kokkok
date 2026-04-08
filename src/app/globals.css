@@ -125,13 +125,15 @@ body {
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--text-primary);
+  text-align: center;
 }
 
 .subtitle {
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-top: 8px;
+  margin-top: 12px;
+  text-align: center;
 }
 
 .section-label {
@@ -141,6 +143,7 @@ body {
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 8px;
+  text-align: center;
 }
 
 /* ── Gradient text ────────────────────────────────────────────────────────── */
@@ -155,6 +158,9 @@ body {
 .heart-icon {
   animation: pulse-glow 2s ease-in-out infinite;
   filter: drop-shadow(0 0 12px rgba(255, 92, 138, 0.5));
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── Inputs ───────────────────────────────────────────────────────────────── */
@@ -162,6 +168,7 @@ body {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
+  text-align: center;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: inherit;
@@ -685,29 +692,36 @@ textarea.input {
   font-weight: 500;
   color: var(--text-secondary);
   height: 32px;
-  overflow: hidden;
+  overflow: visible;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .stats-slider {
   position: relative;
-  width: 100%;
+  width: auto;
   height: 20px;
   text-align: center;
 }
 .stats-item {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
 .stats-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 .stats-hidden {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateX(-50%) translateY(8px);
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */

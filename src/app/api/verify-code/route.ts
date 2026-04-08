@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const cleanPhone = phone.replace(/-/g, '')
-    const result = verifyStoredCode(cleanPhone, code)
+    const result = await verifyStoredCode(cleanPhone, code)
 
     if (!result.valid) {
       return NextResponse.json(

@@ -69,6 +69,7 @@ function HeartIcon({ size = 32, className = '', color }: { size?: number; classN
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      style={{ display: 'block' }}
     >
       {!color && (
         <defs>
@@ -203,7 +204,7 @@ function FeedbackButton() {
     <button
       type="button"
       className="btn-share"
-      onClick={() => window.open('https://forms.gle/PLACEHOLDER', '_blank')}
+      onClick={() => window.open('https://forms.gle/nmvFaiFGKAZU5wp2A', '_blank')}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -356,21 +357,23 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
 
   return (
     <div className="step">
-      <div className="flex items-center gap-3 mb-6 step step-delay-1">
-        <HeartIcon size={28} className="heart-icon" />
+      <StatsBanner />
+
+      <div className="step step-delay-1 mb-8">
+        <HeartIcon size={28} className="heart-icon mx-auto mb-3" />
         <h1 className="title">
           <span className="gradient-text">콕콕</span>
         </h1>
       </div>
 
       <p className="subtitle mb-8 step step-delay-2">
-        익명으로 상대방에게 마음을 전해보세요.
+        내 마음을 전하려면, 먼저 나를 알려주세요.
       </p>
 
       {!codeSent ? (
-        <form onSubmit={handleSendCode} className="space-y-4">
+        <form onSubmit={handleSendCode} className="space-y-6 text-center">
           <div className="step step-delay-3">
-            <div className="section-label">이름</div>
+            <div className="section-label">내 이름</div>
             <input
               className="input"
               type="text"
@@ -383,7 +386,7 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
           </div>
 
           <div className="step step-delay-4">
-            <div className="section-label">휴대폰 번호</div>
+            <div className="section-label">내 휴대폰 번호</div>
             <input
               className="input"
               type="tel"
@@ -413,7 +416,7 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
           </div>
         </form>
       ) : (
-        <form onSubmit={handleVerify} className="space-y-4">
+        <form onSubmit={handleVerify} className="space-y-6 text-center">
           <div className="step step-delay-1">
             <div className="section-label">인증번호 6자리</div>
             <input
@@ -593,13 +596,13 @@ function TargetStep({
     <div className="step">
       <BackButton onClick={onBack} />
 
-      <div className="step step-delay-1 mb-6">
-        <HeartIcon size={24} className="heart-icon mb-3" />
+      <div className="step step-delay-1 mb-8">
+        <HeartIcon size={24} className="heart-icon mx-auto mb-3" />
         <h2 className="title text-2xl">누구에게 콕콕?</h2>
         <p className="subtitle">상대방은 누가 보냈는지 알 수 없어요.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="step step-delay-2">
           <div className="section-label">상대방 휴대폰 번호</div>
           <input
