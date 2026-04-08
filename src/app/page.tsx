@@ -323,7 +323,7 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
     try {
       const result = await verifyCode(phone, code)
       if (!result.verified) {
-        setStatus({ type: 'error', msg: '인증번호가 틀렸어요.' })
+        setStatus({ type: 'error', msg: result.error || '인증번호가 틀렸어요.' })
         return
       }
 
