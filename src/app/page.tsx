@@ -9,9 +9,18 @@ import {
   type SubmitResult,
 } from '@/lib/api'
 import { getSession, saveSession, clearSession, type Session } from '@/lib/session'
+import { pageview, trackScreen } from '@/lib/ga'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'login' | 'splash' | 'target' | 'done' | 'admin'
+
+const STEP_PAGE: Record<Step, string> = {
+  login:  '/',
+  splash: '/splash',
+  target: '/target',
+  done:   '/done',
+  admin:  '/admin',
+}
 type StatusType = 'success' | 'error' | ''
 
 interface Status {
@@ -356,11 +365,6 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
 
       <p className="subtitle mb-8 step step-delay-2">
         익명으로 상대방에게 마음을 전해보세요.
-        {IS_DEMO && (
-          <span className="block mt-2 text-xs" style={{ color: 'rgba(255,200,100,0.8)' }}>
-            ✦ 데모 모드 — 실제 SMS는 전송되지 않아요
-          </span>
-        )}
       </p>
 
       {!codeSent ? (
@@ -909,6 +913,12 @@ export default function HomePage() {
       setStep('splash')
     }
   }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    pageview(STEP_PAGE[step])
+    trackScreen(step, STEP_PAGE[step])
+  }, [step, mounted])
 
   function handleLoginDone(s: Session) {
     setSession(s)

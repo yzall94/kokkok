@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SolapiMessageService } from 'solapi'
 import { generateCode, saveCode } from '@/lib/verification-store'
 
-const API_KEY = process.env.SOLAPI_API_KEY || ''
-const API_SECRET = process.env.SOLAPI_API_SECRET || ''
-const SENDER = process.env.SOLAPI_SENDER || ''
+const API_KEY = process.env.SOLAPI_API_KEY?.trim() ?? ''
+const API_SECRET = process.env.SOLAPI_API_SECRET?.trim() ?? ''
+const SENDER = process.env.SOLAPI_SENDER?.trim() ?? ''
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,14 +26,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const code = generateCode()
-    saveCode(cleanPhone, code)
+    // 환경변수 로딩 확인
+    const envStatus = {
+      hasApiKey: !!API_KEY,
+      hasApiSecret: !!API_SECRET,
+      hasSender: !!SENDER,
+    }
+    console.log('[send-verification] env status:', envStatus)
 
     if (!API_KEY || !API_SECRET || !SENDER) {
-      // Dev/demo mode — log code to console
-      console.log(`[DEV] Verification code for ${cleanPhone}: ${code}`)
-      return NextResponse.json({ success: true })
+      console.warn('[send-verification] missing env vars — SMS not sent')
+      return NextResponse.json(
+        { error: `SMS 설정이 누락되었어요. (key:${envStatus.hasApiKey} secret:${envStatus.hasApiSecret} sender:${envStatus.hasSender})` },
+        { status: 500 }
+      )
     }
+
+    const code = generateCode()
+    saveCode(cleanPhone, code)
 
     const messageService = new SolapiMessageService(API_KEY, API_SECRET)
 
@@ -45,9 +55,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('SMS send error:', error)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[send-verification] SMS send error:', message)
     return NextResponse.json(
-      { error: '문자 전송에 실패했어요. 잠시 후 다시 시도해주세요.' },
+      { error: `문자 전송에 실패했어요. (${message})` },
       { status: 500 }
     )
   }

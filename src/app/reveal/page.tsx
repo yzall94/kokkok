@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getReveal, type RevealData } from '@/lib/api'
+import { pageview, trackScreen } from '@/lib/ga'
 
 // ─── HeartIcon (inline, no import needed across app boundary) ─────────────────
 function HeartIcon({ size = 64, className = '' }: { size?: number; className?: string }) {
@@ -298,6 +299,11 @@ function RevealContent() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<RevealData | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    pageview('/reveal')
+    trackScreen('reveal', '/reveal')
+  }, [])
 
   useEffect(() => {
     if (!token) {
