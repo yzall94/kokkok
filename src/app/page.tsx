@@ -12,10 +12,11 @@ import { getSession, saveSession, clearSession, type Session } from '@/lib/sessi
 import { pageview, trackScreen } from '@/lib/ga'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = 'login' | 'splash' | 'target' | 'done' | 'admin'
+type Step = 'landing' | 'login' | 'splash' | 'target' | 'done' | 'admin'
 
 const STEP_PAGE: Record<Step, string> = {
-  login:  '/',
+  landing: '/landing',
+  login:  '/login',
   splash: '/splash',
   target: '/target',
   done:   '/done',
@@ -267,6 +268,44 @@ function Particles() {
   )
 }
 
+// ─── Step: Landing ───────────────────────────────────────────────────────────
+function LandingStep({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="step text-center">
+      <StatsBanner />
+
+      <div className="step step-delay-1 mb-4">
+        <HeartIcon size={32} className="heart-icon mx-auto mb-3" />
+        <h1 className="title" style={{ fontSize: '2.5rem' }}>
+          <span className="gradient-text">콕콕</span>
+        </h1>
+      </div>
+
+      <p className="landing-tagline step step-delay-2">
+        좋아하는 사람에게<br />익명으로 마음을 전해보세요
+      </p>
+
+      <p className="subtitle step step-delay-3" style={{ marginTop: 8 }}>
+        서로 콕콕하면, 정체가 공개돼요 💗
+      </p>
+
+      <div className="landing-hook step step-delay-4">
+        <p>혹시 누군가 이미 너에게 콕콕 했을지도? 👀</p>
+      </div>
+
+      <div className="step step-delay-5">
+        <button className="btn-primary" type="button" onClick={onStart}>
+          시작하기
+        </button>
+      </div>
+
+      <p className="landing-privacy step step-delay-6">
+        🔒 번호는 암호화되어 안전하게 보관돼요
+      </p>
+    </div>
+  )
+}
+
 // ─── Step: Login ──────────────────────────────────────────────────────────────
 function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
   const [name, setName] = useState('')
@@ -367,7 +406,7 @@ function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
       </div>
 
       <p className="subtitle mb-8 step step-delay-2">
-        내 마음을 전하려면, 먼저 나를 알려주세요.
+        마음을 전하려면, 먼저 나를 알려줘요!
       </p>
 
       {!codeSent ? (
@@ -487,7 +526,7 @@ function SplashStep({
           <h1 className="title text-5xl mb-2">
             <span className="gradient-text">콕콕</span>
           </h1>
-          <p className="subtitle">익명으로 마음을 전하는 서비스</p>
+          <p className="subtitle">두근두근, 누구에게 마음을 전할까요?</p>
         </div>
 
         <div
@@ -520,7 +559,7 @@ function SplashStep({
           </div>
         </div>
 
-        <p className="touch-hint step step-delay-4">눌러서 시작</p>
+        <p className="touch-hint step step-delay-4">눌러서 콕콕!</p>
       </div>
 
       <div className="splash-bottom step step-delay-5">
@@ -599,7 +638,7 @@ function TargetStep({
       <div className="step step-delay-1 mb-8">
         <HeartIcon size={24} className="heart-icon mx-auto mb-3" />
         <h2 className="title text-2xl">누구에게 콕콕?</h2>
-        <p className="subtitle">상대방은 누가 보냈는지 알 수 없어요.</p>
+        <p className="subtitle">걱정 마세요, 누가 보냈는지 절대 모른답니다 🤫</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -718,36 +757,8 @@ function AdminStep({
     setLoading(true)
 
     if (IS_DEMO) {
-      // Demo data
-      const demoReceived: KkokkEntry[] = [
-        {
-          id: '1',
-          hint_text: '우리 자주 마주쳤었잖아요 ☕',
-          matched: true,
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          reveal_token: 'demo-token-1',
-          partner_name: '데모 사용자',
-          partner_phone: '010-9876-5432',
-        },
-        {
-          id: '2',
-          hint_text: null,
-          matched: false,
-          created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-          reveal_token: 'demo-token-2',
-        },
-      ]
-      const demoSent: KkokkEntry[] = [
-        {
-          id: '3',
-          hint_text: '같이 밥 먹은 적 있어요',
-          matched: false,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          reveal_token: 'demo-token-3',
-        },
-      ]
-      setReceivedList(demoReceived)
-      setSentList(demoSent)
+      setReceivedList([])
+      setSentList([])
       setLoading(false)
       return
     }
@@ -903,7 +914,7 @@ function AdminStep({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HomePage() {
-  const [step, setStep] = useState<Step>('login')
+  const [step, setStep] = useState<Step>('landing')
   const [session, setSession] = useState<Session | null>(null)
   const [matchResult, setMatchResult] = useState<SubmitResult | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -952,6 +963,8 @@ export default function HomePage() {
 
       <main className="app-shell">
         <div className="card">
+          {step === 'landing' && <LandingStep onStart={() => setStep('login')} />}
+
           {step === 'login' && <LoginStep onDone={handleLoginDone} />}
 
           {step === 'splash' && session && (
@@ -983,7 +996,7 @@ export default function HomePage() {
               onBack={() => setStep('splash')}
               onLogout={() => {
                 setSession(null)
-                setStep('login')
+                setStep('landing')
               }}
             />
           )}

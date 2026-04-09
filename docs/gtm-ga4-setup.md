@@ -1,6 +1,6 @@
 # 콕콕 — GTM / GA4 / Solapi 설정 인수인계 문서
 
-> 마지막 업데이트: 2026-04-08  
+> 마지막 업데이트: 2026-04-09  
 > 작성 기준: 현재 프로덕션 배포 상태
 
 ---
@@ -80,13 +80,19 @@ printf '%s' '01055817054' | vercel env add SOLAPI_SENDER production --token $TOK
 
 | Step 상태 | screen_name | screen_path (page_path) |
 |-----------|-------------|-------------------------|
-| `login` | `login` | `/` |
+| `landing` | `landing` | `/landing` |
+| `login` | `login` | `/login` |
 | `splash` | `splash` | `/splash` |
 | `target` | `target` | `/target` |
 | `done` | `done` | `/done` |
 | `admin` | `admin` | `/admin` |
 
-`reveal/page.tsx`에서도 페이지 마운트 시 `trackScreen('reveal', '/reveal')` 호출.
+별도 페이지 라우트에서도 마운트 시 `trackScreen` 호출:
+
+| 페이지 | screen_name | screen_path |
+|--------|-------------|-------------|
+| `reveal/page.tsx` | `reveal` | `/reveal` |
+| `dashboard/page.tsx` | `dashboard` | `/dashboard` |
 
 ---
 
