@@ -490,6 +490,39 @@ textarea.input {
   padding: 40px 0;
 }
 
+/* ── Relationship chips ──────────────────────────────────────────────────── */
+.relationship-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.relationship-chip {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.relationship-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.relationship-chip.active {
+  color: var(--accent);
+  background: rgba(255, 92, 138, 0.1);
+  border-color: rgba(255, 92, 138, 0.3);
+}
+
 /* ── Loading spinner ──────────────────────────────────────────────────────── */
 .spinner {
   width: 20px;

@@ -3,7 +3,7 @@ import { SolapiMessageService } from 'solapi'
 
 export async function POST(request: NextRequest) {
   try {
-    const { sender_name, sender_phone, target_phone, hint_text, verification_token } = await request.json()
+    const { sender_name, sender_phone, target_phone, relationship, hint_text, verification_token } = await request.json()
 
     if (!sender_phone || !target_phone || !verification_token) {
       return NextResponse.json({ error: '필수 정보가 없습니다.' }, { status: 400 })
@@ -22,12 +22,23 @@ export async function POST(request: NextRequest) {
     if (API_KEY && API_SECRET && SENDER) {
       const messageService = new SolapiMessageService(API_KEY, API_SECRET)
       const cleanTarget = target_phone.replace(/-/g, '')
-      const revealUrl = `https://kokkok-nu.vercel.app/reveal?t=${revealToken}`
+      const revealUrl = `https://kokkok-nu.vercel.app/r/${revealToken}`
+
+      const opener = relationship
+        ? `${relationship}의 누군가가 당신을 좋아하고 있어요 🫣💗`
+        : '누가 몰래 당신을 좋아하고 있어요 🫣💗'
+      const lines = [opener, '']
+      if (hint_text) {
+        const preview = hint_text.length > 10 ? hint_text.slice(0, 10) + '…' : hint_text
+        lines.push(`🔖 힌트: ${preview}`)
+      }
+      lines.push(`\n👇 아래 링크에서 마음을 전한 분이 남긴 힌트를 확인해봐요`)
+      lines.push(revealUrl)
 
       const result = await messageService.send({
         to: cleanTarget,
         from: SENDER,
-        text: `[콕콕] 누군가 당신에게 마음이 있어요 💌\n힌트를 확인해보세요: ${revealUrl}`,
+        text: lines.join('\n'),
       })
       console.log('[submit-kokkok] SMS result:', JSON.stringify(result))
 
@@ -40,7 +51,6 @@ export async function POST(request: NextRequest) {
     }
 
     void sender_name
-    void hint_text
 
     return NextResponse.json({ success: true, matched: false, reveal_token: revealToken })
   } catch (error) {

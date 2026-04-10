@@ -590,9 +590,20 @@ function TargetStep({
   onBack: () => void
 }) {
   const [targetPhone, setTargetPhone] = useState('')
+  const [relationship, setRelationship] = useState('')
   const [hint, setHint] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>({ type: '', msg: '' })
+
+  const RELATIONSHIP_OPTIONS = [
+    { value: '같은 학교', label: '같은 학교' },
+    { value: '소꿉친구', label: '소꿉친구' },
+    { value: '같은 직장', label: '같은 직장' },
+    { value: '동네 친구', label: '동네 친구' },
+    { value: '같은 동아리', label: '같은 동아리' },
+    { value: '온라인에서', label: '온라인에서' },
+    { value: '기타', label: '기타' },
+  ]
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -602,6 +613,10 @@ function TargetStep({
 
     if (!isValidPhone(targetPhone)) {
       setStatus({ type: 'error', msg: '올바른 휴대폰 번호를 입력해주세요.' })
+      return
+    }
+    if (!hint.trim()) {
+      setStatus({ type: 'error', msg: '힌트를 입력해주세요.' })
       return
     }
     if (cleanTarget === cleanSender) {
@@ -617,7 +632,8 @@ function TargetStep({
         sender_name: session.name,
         sender_phone: session.phone,
         target_phone: targetPhone,
-        hint_text: hint.trim() || undefined,
+        relationship: relationship || undefined,
+        hint_text: hint.trim(),
         verification_token: session.token,
       })
       onDone(result)
@@ -656,7 +672,23 @@ function TargetStep({
         </div>
 
         <div className="step step-delay-3">
-          <div className="section-label">힌트 (선택)</div>
+          <div className="section-label">우리 사이는?</div>
+          <div className="relationship-grid">
+            {RELATIONSHIP_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`relationship-chip ${relationship === opt.value ? 'active' : ''}`}
+                onClick={() => setRelationship(relationship === opt.value ? '' : opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="step step-delay-4">
+          <div className="section-label">힌트</div>
           <textarea
             className="input"
             placeholder="우리 자주 마주쳤었잖아요 ☕&#10;힌트를 남기면 상대방이 확인할 수 있어요."
@@ -669,11 +701,11 @@ function TargetStep({
           </p>
         </div>
 
-        <div className="step step-delay-4">
+        <div className="step step-delay-5">
           <StatusMsg status={status} />
         </div>
 
-        <div className="step step-delay-5 pt-2">
+        <div className="step step-delay-6 pt-2">
           <button className="btn-primary" type="submit" disabled={loading}>
             {loading ? (
               <>

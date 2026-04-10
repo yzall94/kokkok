@@ -97,6 +97,7 @@ export interface SubmitParams {
   sender_name: string
   sender_phone: string
   target_phone: string
+  relationship?: string
   hint_text?: string
   verification_token: string
 }
