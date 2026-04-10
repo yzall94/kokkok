@@ -107,7 +107,7 @@ export interface SubmitResult {
 }
 
 export async function submitKokkok(params: SubmitParams): Promise<SubmitResult> {
-  return callEdgeFunction('submit-kokkok', params)
+  return callApi('/api/submit-kokkok', params)
 }
 
 export interface RevealData {
