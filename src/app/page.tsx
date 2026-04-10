@@ -56,8 +56,8 @@ const IS_DEMO =
   process.env.NEXT_PUBLIC_SUPABASE_URL === 'YOUR_SUPABASE_URL'
 
 // Stats display calibration (from environment)
-const STATS_CALIBRATION_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '0', 10)
-const STATS_CALIBRATION_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '0', 10)
+const STATS_CALIBRATION_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '10', 10)
+const STATS_CALIBRATION_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '3', 10)
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

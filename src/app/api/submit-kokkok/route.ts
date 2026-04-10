@@ -3,16 +3,13 @@ import { SolapiMessageService } from 'solapi'
 
 export async function POST(request: NextRequest) {
   try {
-    const { sender_name, sender_phone, target_phone, relationship, hint_text, verification_token } = await request.json()
+    const { sender_name, sender_phone, target_phone, relationship, hint_text, reveal_token } = await request.json()
 
-    if (!sender_phone || !target_phone || !verification_token) {
+    if (!sender_phone || !target_phone || !reveal_token) {
       return NextResponse.json({ error: '필수 정보가 없습니다.' }, { status: 400 })
     }
 
-    // reveal 토큰 생성
-    const array = new Uint8Array(32)
-    crypto.getRandomValues(array)
-    const revealToken = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')
+    const revealToken = reveal_token
 
     // SMS 발송 (타겟에게)
     const API_KEY = process.env.SOLAPI_API_KEY?.trim()

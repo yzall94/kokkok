@@ -109,7 +109,21 @@ export interface SubmitResult {
 }
 
 export async function submitKokkok(params: SubmitParams): Promise<SubmitResult> {
-  return callApi('/api/submit-kokkok', params)
+  // 1. Supabase edge function: DB 저장 + 매칭 확인
+  const result = await callEdgeFunction<SubmitResult & { target_phone?: string }>('submit-kokkok', params)
+
+  // 2. Next.js API: SMS 발송 (reveal_token 사용)
+  try {
+    await callApi('/api/submit-kokkok', {
+      ...params,
+      reveal_token: result.reveal_token,
+    })
+  } catch {
+    // SMS 실패해도 콕콕 자체는 성공
+    console.error('SMS 발송 실패')
+  }
+
+  return result
 }
 
 export interface RevealData {
