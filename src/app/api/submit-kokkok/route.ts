@@ -29,15 +29,20 @@ export async function POST(request: NextRequest) {
         from: SENDER,
         text: `[콕콕] 누군가 당신에게 마음이 있어요 💌\n힌트를 확인해보세요: ${revealUrl}`,
       })
-      console.log('[SMS to target] result:', JSON.stringify(result))
+      console.log('[submit-kokkok] SMS result:', JSON.stringify(result))
+
+      const failed = (result as { failedMessageList?: unknown[] }).failedMessageList
+      if (failed && failed.length > 0) {
+        console.error('[submit-kokkok] SMS failed:', JSON.stringify(failed))
+      }
     } else {
-      console.log('[SMS to target] 데모 모드 — 환경변수 없음. token:', revealToken)
+      console.log('[submit-kokkok] 환경변수 없음 — SMS 미발송. revealToken:', revealToken)
     }
 
     void sender_name
     void hint_text
 
-    return NextResponse.json({ success: true, matched: false, token: revealToken })
+    return NextResponse.json({ success: true, matched: false, reveal_token: revealToken })
   } catch (error) {
     const msg = error instanceof Error ? error.message : '알 수 없는 오류'
     console.error('[submit-kokkok error]', msg)

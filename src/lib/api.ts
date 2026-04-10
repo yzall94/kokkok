@@ -104,6 +104,7 @@ export interface SubmitParams {
 export interface SubmitResult {
   success: boolean
   matched: boolean
+  reveal_token?: string
 }
 
 export async function submitKokkok(params: SubmitParams): Promise<SubmitResult> {

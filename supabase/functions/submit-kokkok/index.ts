@@ -7,37 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = Deno.env.get("SITE_URL") || "https://yzall94.github.io/kokkok";
-
 async function hashPhone(phone: string): Promise<string> {
   const encoder = new TextEncoder();
   const buffer = await crypto.subtle.digest("SHA-256", encoder.encode(phone));
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-async function sendSMS(to: string, body: string): Promise<boolean> {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER")!;
-
-  const res = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: `+82${to.slice(1)}`,
-        From: from,
-        Body: body,
-      }),
-    }
-  );
-  return res.ok;
 }
 
 serve(async (req) => {
@@ -157,32 +132,33 @@ serve(async (req) => {
         .eq("id", entryId)
         .single();
 
-      const matchMsg = (token: string) =>
-        `콕콕 — 서로 같은 마음이에요! 💗 ${SITE_URL}/reveal.html?t=${token}`;
-
-      await sendSMS(cleanSenderPhone, matchMsg(newEntryData!.reveal_token));
-      await sendSMS(cleanTargetPhone, matchMsg(matchEntry.reveal_token));
-
       return new Response(
-        JSON.stringify({ success: true, matched: true }),
+        JSON.stringify({
+          success: true,
+          matched: true,
+          reveal_token: newEntryData!.reveal_token,
+          match_reveal_token: matchEntry.reveal_token,
+          target_phone: cleanTargetPhone,
+          sender_phone: cleanSenderPhone,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // No match — send kokkok SMS to target
+    // No match — return reveal_token for SMS sending on the client side
     const { data: entryData } = await supabase
       .from("kokkok_entries")
       .select("reveal_token")
       .eq("id", entryId)
       .single();
 
-    await sendSMS(
-      cleanTargetPhone,
-      `누군가 당신을 좋아하고 있어요 💗 ${SITE_URL}/reveal.html?t=${entryData!.reveal_token}`
-    );
-
     return new Response(
-      JSON.stringify({ success: true, matched: false }),
+      JSON.stringify({
+        success: true,
+        matched: false,
+        reveal_token: entryData!.reveal_token,
+        target_phone: cleanTargetPhone,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
