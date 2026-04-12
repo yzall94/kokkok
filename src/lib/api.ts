@@ -1,8 +1,5 @@
-const IS_DEMO =
-  !process.env.NEXT_PUBLIC_TURSO_CONFIGURED ||
-  process.env.NEXT_PUBLIC_TURSO_CONFIGURED !== 'true'
-
-// ─── API call helper ─────────────────────────────────────────────────────────
+// All API calls go through Next.js API routes.
+// No demo mode on client — server handles DB availability.
 
 async function callApi<T>(path: string, body?: object): Promise<T> {
   const res = await fetch(path, {
@@ -23,10 +20,6 @@ async function callApi<T>(path: string, body?: object): Promise<T> {
 // ─── Verification ────────────────────────────────────────────────────────────
 
 export async function sendVerification(phone: string): Promise<{ success: boolean }> {
-  if (IS_DEMO) {
-    await new Promise(r => setTimeout(r, 500))
-    return { success: true }
-  }
   return callApi('/api/send-verification', { phone })
 }
 
@@ -40,13 +33,6 @@ export async function verifyCode(
   phone: string,
   code: string
 ): Promise<VerifyResult> {
-  if (IS_DEMO) {
-    await new Promise(r => setTimeout(r, 500))
-    if (code === '000000') {
-      return { verified: true, token: 'demo-token-' + Date.now() }
-    }
-    return { verified: false, token: '', error: '인증번호가 틀렸어요. (데모: 000000)' }
-  }
   return callApi('/api/verify-code', { phone, code })
 }
 
@@ -68,10 +54,6 @@ export interface SubmitResult {
 }
 
 export async function submitKokkok(params: SubmitParams): Promise<SubmitResult> {
-  if (IS_DEMO) {
-    await new Promise(r => setTimeout(r, 800))
-    return { success: true, matched: Math.random() > 0.7 }
-  }
   return callApi('/api/submit-kokkok', params)
 }
 
@@ -86,24 +68,12 @@ export interface RevealData {
 }
 
 export async function getReveal(token: string): Promise<RevealData> {
-  if (IS_DEMO) {
-    await new Promise(r => setTimeout(r, 800))
-    return {
-      matched: true,
-      partner_name: '데모 사용자',
-      partner_phone: '010-1234-5678',
-      hint_text: '우리 자주 마주쳤었잖아요 ☕',
-    }
-  }
   return callApi('/api/get-reveal', { token })
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
 
 export async function getStats(): Promise<{ kokkoks: number; couples: number }> {
-  if (IS_DEMO) {
-    return { kokkoks: 13, couples: 4 }
-  }
   return callApi('/api/get-stats')
 }
 
@@ -119,8 +89,5 @@ export interface EntryData {
 }
 
 export async function getEntries(phoneHash: string): Promise<{ received: EntryData[]; sent: EntryData[] }> {
-  if (IS_DEMO) {
-    return { received: [], sent: [] }
-  }
   return callApi('/api/get-entries', { phone_hash: phoneHash })
 }

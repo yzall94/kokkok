@@ -3,9 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { pageview, trackScreen } from '@/lib/ga'
 
-const IS_DEMO =
-  !process.env.NEXT_PUBLIC_TURSO_CONFIGURED ||
-  process.env.NEXT_PUBLIC_TURSO_CONFIGURED !== 'true'
+const IS_DEMO = false // Always use real API
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'kokkok2026'
 
