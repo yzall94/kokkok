@@ -39,10 +39,15 @@ export async function POST(request: NextRequest) {
     const entryId = generateToken().slice(0, 32)
     const encryptedName = Buffer.from(sender_name).toString('base64')
 
+    // Mask target phone: 01012345678 → 010-****-5678
+    const targetMasked = cleanTarget.length >= 11
+      ? `${cleanTarget.slice(0, 3)}-****-${cleanTarget.slice(7)}`
+      : `${cleanTarget.slice(0, 3)}-****-${cleanTarget.slice(-4)}`
+
     await execute(
-      `INSERT INTO kokkok_entries (id, sender_name_encrypted, sender_phone_hash, target_phone_hash, hint_text, relationship, reveal_token)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [entryId, encryptedName, senderHash, targetHash, hint_text || null, relationship || null, revealToken]
+      `INSERT INTO kokkok_entries (id, sender_name_encrypted, sender_phone_hash, target_phone_hash, hint_text, relationship, reveal_token, target_phone_masked)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [entryId, encryptedName, senderHash, targetHash, hint_text || null, relationship || null, revealToken, targetMasked]
     )
 
     // Check for mutual match

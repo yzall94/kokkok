@@ -86,6 +86,7 @@ export interface EntryData {
   created_at: string
   reveal_token: string
   partner_name?: string
+  target_phone_masked?: string
 }
 
 export async function getEntries(phoneHash: string): Promise<{ received: EntryData[]; sent: EntryData[] }> {

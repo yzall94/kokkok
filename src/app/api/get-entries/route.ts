@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       [phone_hash]
     )
     const sentRes = await execute(
-      `SELECT id, hint_text, matched, created_at, reveal_token
+      `SELECT id, hint_text, matched, created_at, reveal_token, target_phone_masked
        FROM kokkok_entries WHERE sender_phone_hash = ? ORDER BY created_at DESC LIMIT 20`,
       [phone_hash]
     )
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       matched: !!row.matched,
       created_at: row.created_at,
       reveal_token: row.reveal_token,
+      target_phone_masked: row.target_phone_masked,
     }))
 
     return NextResponse.json({ received, sent })

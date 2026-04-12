@@ -288,7 +288,7 @@ function MessagesList({
                   <div className="landing-entry-name">
                     {tab === 'received'
                       ? entry.matched ? `${entry.partner_name || '???'}` : '익명의 누군가'
-                      : entry.matched ? '매칭 성공!' : '대기 중…'}
+                      : entry.target_phone_masked || '알 수 없음'}
                   </div>
                   {entry.hint_text && <div className="landing-entry-hint">&ldquo;{entry.hint_text}&rdquo;</div>}
                   <div className="landing-entry-time">{formatDate(entry.created_at)}</div>
