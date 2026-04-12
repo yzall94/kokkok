@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SolapiMessageService } from 'solapi'
-import { getTurso } from '@/lib/turso'
+import { execute, isConfigured } from '@/lib/turso'
 
 const SOLAPI_KEY = process.env.SOLAPI_API_KEY?.trim() ?? ''
 const SOLAPI_SECRET = process.env.SOLAPI_API_SECRET?.trim() ?? ''
@@ -27,8 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '필수 정보가 누락되었어요.' }, { status: 400 })
     }
 
-    const db = getTurso()
-    if (!db) {
+    if (!isConfigured()) {
       return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
     }
 
@@ -40,37 +39,27 @@ export async function POST(request: NextRequest) {
     const entryId = generateToken().slice(0, 32)
     const encryptedName = Buffer.from(sender_name).toString('base64')
 
-    // Insert entry
-    await db.execute({
-      sql: `INSERT INTO kokkok_entries (id, sender_name_encrypted, sender_phone_hash, target_phone_hash, hint_text, relationship, reveal_token)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [entryId, encryptedName, senderHash, targetHash, hint_text || null, relationship || null, revealToken],
-    })
+    await execute(
+      `INSERT INTO kokkok_entries (id, sender_name_encrypted, sender_phone_hash, target_phone_hash, hint_text, relationship, reveal_token)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [entryId, encryptedName, senderHash, targetHash, hint_text || null, relationship || null, revealToken]
+    )
 
     // Check for mutual match
-    const matchResult = await db.execute({
-      sql: `SELECT id FROM kokkok_entries
-            WHERE sender_phone_hash = ? AND target_phone_hash = ? AND matched = 0
-            LIMIT 1`,
-      args: [targetHash, senderHash],
-    })
+    const matchResult = await execute(
+      `SELECT id FROM kokkok_entries WHERE sender_phone_hash = ? AND target_phone_hash = ? AND matched = 0 LIMIT 1`,
+      [targetHash, senderHash]
+    )
 
     let matched = false
     if (matchResult.rows.length > 0) {
       matched = true
       const matchId = matchResult.rows[0].id as string
-
-      await db.execute({
-        sql: `UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`,
-        args: [matchId, entryId],
-      })
-      await db.execute({
-        sql: `UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`,
-        args: [entryId, matchId],
-      })
+      await execute(`UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`, [matchId, entryId])
+      await execute(`UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`, [entryId, matchId])
     }
 
-    // Send SMS to target
+    // Send SMS
     if (SOLAPI_KEY && SOLAPI_SECRET && SOLAPI_SENDER) {
       try {
         const messageService = new SolapiMessageService(SOLAPI_KEY, SOLAPI_SECRET)
@@ -84,12 +73,7 @@ export async function POST(request: NextRequest) {
         }
         lines.push(`\n👇 확인하기`)
         lines.push(`${SITE_URL}/r/${revealToken.slice(0, 16)}`)
-
-        await messageService.send({
-          to: cleanTarget,
-          from: SOLAPI_SENDER,
-          text: lines.join('\n'),
-        })
+        await messageService.send({ to: cleanTarget, from: SOLAPI_SENDER, text: lines.join('\n') })
       } catch (smsErr) {
         console.error('[submit-kokkok] SMS error:', smsErr)
       }
@@ -98,9 +82,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, matched, reveal_token: revealToken })
   } catch (error) {
     console.error('[submit-kokkok] error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '전송에 실패했어요.' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error instanceof Error ? error.message : '전송에 실패했어요.' }, { status: 500 })
   }
 }

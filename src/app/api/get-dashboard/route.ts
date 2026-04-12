@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server'
-import { getTurso } from '@/lib/turso'
+import { execute, isConfigured } from '@/lib/turso'
 
 export async function GET() {
-  const db = getTurso()
-  if (!db) {
-    return NextResponse.json({ entries: [] })
-  }
+  if (!isConfigured()) return NextResponse.json({ entries: [] })
 
   try {
-    const result = await db.execute(
+    const result = await execute(
       `SELECT id, sender_phone_hash, target_phone_hash, hint_text, matched, created_at
-       FROM kokkok_entries
-       ORDER BY created_at DESC
-       LIMIT 5000`
+       FROM kokkok_entries ORDER BY created_at DESC LIMIT 5000`
     )
 
     const entries = result.rows.map(row => ({
