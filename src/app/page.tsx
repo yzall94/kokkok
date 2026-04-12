@@ -12,21 +12,12 @@ import { getSession, saveSession, clearSession, type Session } from '@/lib/sessi
 import { pageview, trackScreen } from '@/lib/ga'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = 'landing' | 'login' | 'splash' | 'target' | 'done' | 'admin'
+type Phase = 'list' | 'compose' | 'login' | 'notice'
 
-const STEP_PAGE: Record<Step, string> = {
-  landing: '/landing',
-  login:  '/login',
-  splash: '/splash',
-  target: '/target',
-  done:   '/done',
-  admin:  '/admin',
-}
-type StatusType = 'success' | 'error' | ''
-
-interface Status {
-  type: StatusType
-  msg: string
+interface ChatMessage {
+  id: string
+  type: 'sent' | 'received' | 'system' | 'time'
+  text: string
 }
 
 interface KkokkEntry {
@@ -51,994 +42,982 @@ function isValidPhone(phone: string): boolean {
   return /^01[016789]\d{7,8}$/.test(phone.replace(/-/g, ''))
 }
 
+function nowTimeString(): string {
+  const d = new Date()
+  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+}
+
 const IS_DEMO =
   !process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL === 'YOUR_SUPABASE_URL'
 
-// Stats display calibration (from environment)
-const STATS_CALIBRATION_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '10', 10)
-const STATS_CALIBRATION_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '3', 10)
+const STATS_CAL_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '10', 10)
+const STATS_CAL_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '3', 10)
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const RELATIONSHIPS = [
+  '같은 학교', '소꿉친구', '같은 직장',
+  '동네 친구', '같은 동아리', '온라인에서', '기타',
+]
 
-function HeartIcon({ size = 32, className = '', color }: { size?: number; className?: string; color?: string }) {
+// ─── Icons ────────────────────────────────────────────────────────────────────
+function ChevronLeft({ size = 20 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={{ display: 'block' }}
-    >
-      {!color && (
-        <defs>
-          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FF5C8A" />
-            <stop offset="100%" stopColor="#FF7A6E" />
-          </linearGradient>
-        </defs>
-      )}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  )
+}
+
+function ChevronRight({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
+function ComposeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+    </svg>
+  )
+}
+
+function SendArrow() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+      <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94l18.04-8.01a.75.75 0 0 0 0-1.37L3.478 2.404z" />
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(60,60,67,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
+function KokkokLogo({ size = 28, color = 'gradient' }: { size?: number; color?: 'gradient' | 'white' }) {
+  const fill = color === 'white' ? '#FFFFFF' : '#FF5C8A'
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        fill={color || "url(#heartGrad)"}
+        fill={fill}
       />
     </svg>
   )
 }
 
-function StatusMsg({ status }: { status: Status }) {
-  if (!status.type) return null
-  return (
-    <div className={`status-msg ${status.type}`}>
-      <span>{status.type === 'success' ? '✓' : '!'}</span>
-      <span>{status.msg}</span>
-    </div>
-  )
-}
-
-function ShareButton() {
-  const [copied, setCopied] = useState(false)
-  const shareUrl = 'https://kokkok-nu.vercel.app'
-  const shareText = '익명으로 마음을 전해보세요 💗 콕콕'
-
-  async function handleShare() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: '콕콕', text: shareText, url: shareUrl })
-        return
-      } catch {
-        // User cancelled or share failed — fall through to clipboard
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Clipboard API not available
-    }
-  }
-
-  return (
-    <button type="button" className="btn-share" onClick={handleShare}>
-      {copied ? (
-        <>
-          <span className="share-copied">✓</span>
-          <span className="share-copied">링크 복사됨!</span>
-        </>
-      ) : (
-        <>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="18" cy="5" r="3"/>
-            <circle cx="6" cy="12" r="3"/>
-            <circle cx="18" cy="19" r="3"/>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-          </svg>
-          공유하기
-        </>
-      )}
-    </button>
-  )
-}
-
-function StatsBanner() {
-  const [stats, setStats] = useState<{ kokkoks: number; couples: number } | null>(null)
-  const [showFirst, setShowFirst] = useState(true)
-
-  useEffect(() => {
-    async function fetchStats() {
-      if (IS_DEMO) {
-        setStats({ kokkoks: 3 + STATS_CALIBRATION_A, couples: 1 + STATS_CALIBRATION_B })
-        return
-      }
-
-      try {
-        const db = getSupabase()
-        if (!db) return
-
-        const [kokkokRes, coupleRes] = await Promise.all([
-          db.from('kokkok_entries').select('id', { count: 'exact', head: true }),
-          db.from('kokkok_entries').select('id', { count: 'exact', head: true }).eq('matched', true),
-        ])
-
-        const kokkokCount = kokkokRes.count ?? 0
-        const coupleCount = Math.floor((coupleRes.count ?? 0) / 2)
-
-        setStats({
-          kokkoks: kokkokCount + STATS_CALIBRATION_A,
-          couples: coupleCount + STATS_CALIBRATION_B,
-        })
-      } catch {
-        // Silently fail — banner just won't show
-      }
-    }
-
-    fetchStats()
-  }, [])
-
-  useEffect(() => {
-    const interval = setInterval(() => setShowFirst((prev) => !prev), 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (!stats) return null
-
-  return (
-    <div className="stats-banner">
-      <div className="stats-slider">
-        <span className={`stats-item ${showFirst ? 'stats-visible' : 'stats-hidden'}`}>
-          💗 {stats.kokkoks}명이 콕콕했어요
-        </span>
-        <span className={`stats-item ${!showFirst ? 'stats-visible' : 'stats-hidden'}`}>
-          💑 {stats.couples}명이 커플이 되었어요
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function FeedbackButton() {
-  return (
-    <button
-      type="button"
-      className="btn-share"
-      onClick={() => window.open('https://forms.gle/nmvFaiFGKAZU5wp2A', '_blank')}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      기능제안하기
-    </button>
-  )
-}
-
-function BackButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button className="back-btn" onClick={onClick} type="button">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path
-          d="M10 12L6 8L10 4"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      뒤로
-    </button>
-  )
-}
-
-function Particles() {
-  const particles = useRef<
-    { id: number; size: number; left: number; delay: number; duration: number }[]
-  >([])
-
-  if (particles.current.length === 0) {
-    for (let i = 0; i < 8; i++) {
-      particles.current.push({
-        id: i,
-        size: 40 + Math.random() * 80,
-        left: Math.random() * 100,
-        delay: Math.random() * 15,
-        duration: 15 + Math.random() * 20,
-      })
-    }
-  }
-
-  return (
-    <div className="particles" aria-hidden="true">
-      {particles.current.map((p) => (
-        <div
-          key={p.id}
-          className="particle"
-          style={{
-            width: p.size,
-            height: p.size,
-            left: `${p.left}%`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-// ─── Step: Landing ───────────────────────────────────────────────────────────
-function LandingStep({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="step text-center">
-      <StatsBanner />
-
-      <div className="step step-delay-1 mb-4">
-        <HeartIcon size={32} className="heart-icon mx-auto mb-3" />
-        <h1 className="title" style={{ fontSize: '2.5rem' }}>
-          <span className="gradient-text">콕콕</span>
-        </h1>
-      </div>
-
-      <p className="landing-tagline step step-delay-2">
-        좋아하는 사람에게<br />익명으로 마음을 전해보세요
-      </p>
-
-      <p className="subtitle step step-delay-3" style={{ marginTop: 8 }}>
-        서로 콕콕하면, 정체가 공개돼요 💗
-      </p>
-
-      <div className="landing-hook step step-delay-4">
-        <p>혹시 누군가 이미 너에게 콕콕 했을지도? 👀</p>
-      </div>
-
-      <div className="step step-delay-5">
-        <button className="btn-primary" type="button" onClick={onStart}>
-          시작하기
-        </button>
-      </div>
-
-      <p className="landing-privacy step step-delay-6">
-        🔒 번호는 암호화되어 안전하게 보관돼요
-      </p>
-    </div>
-  )
-}
-
-// ─── Step: Login ──────────────────────────────────────────────────────────────
-function LoginStep({ onDone }: { onDone: (session: Session) => void }) {
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [codeSent, setCodeSent] = useState(false)
-  const [code, setCode] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [status, setStatus] = useState<Status>({ type: '', msg: '' })
-  const [resendCooldown, setResendCooldown] = useState(0)
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  function startCooldown() {
-    setResendCooldown(60)
-    cooldownRef.current = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(cooldownRef.current!)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
-  async function handleSendCode(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) {
-      setStatus({ type: 'error', msg: '이름을 입력해주세요.' })
-      return
-    }
-    if (!isValidPhone(phone)) {
-      setStatus({ type: 'error', msg: '올바른 휴대폰 번호를 입력해주세요.' })
-      return
-    }
-
-    setLoading(true)
-    setStatus({ type: '', msg: '' })
-
-    try {
-      await sendVerification(phone)
-      setCodeSent(true)
-      setStatus({ type: 'success', msg: '인증번호가 발송되었어요!' })
-      startCooldown()
-    } catch (err) {
-      setStatus({
-        type: 'error',
-        msg: err instanceof Error ? err.message : '전송에 실패했어요.',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault()
-    if (code.length < 6) {
-      setStatus({ type: 'error', msg: '6자리 인증번호를 입력해주세요.' })
-      return
-    }
-
-    setLoading(true)
-    setStatus({ type: '', msg: '' })
-
-    try {
-      const result = await verifyCode(phone, code)
-      if (!result.verified) {
-        setStatus({ type: 'error', msg: result.error || '인증번호가 틀렸어요.' })
-        return
-      }
-
-      const session: Session = {
-        name: name.trim(),
-        phone,
-        token: result.token,
-        savedAt: Date.now(),
-      }
-      saveSession(session)
-      onDone(session)
-    } catch (err) {
-      setStatus({
-        type: 'error',
-        msg: err instanceof Error ? err.message : '인증에 실패했어요.',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="step">
-      <StatsBanner />
-
-      <div className="step step-delay-1 mb-8">
-        <HeartIcon size={28} className="heart-icon mx-auto mb-3" />
-        <h1 className="title">
-          <span className="gradient-text">콕콕</span>
-        </h1>
-      </div>
-
-      <p className="subtitle mb-8 step step-delay-2">
-        마음을 전하려면, 먼저 나를 알려줘요!
-      </p>
-
-      {!codeSent ? (
-        <form onSubmit={handleSendCode} className="space-y-6 text-center">
-          <div className="step step-delay-3">
-            <div className="section-label">내 이름</div>
-            <input
-              className="input"
-              type="text"
-              placeholder="홍길동"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={20}
-              autoComplete="name"
-            />
-          </div>
-
-          <div className="step step-delay-4">
-            <div className="section-label">내 휴대폰 번호</div>
-            <input
-              className="input"
-              type="tel"
-              placeholder="010-0000-0000"
-              value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
-              autoComplete="tel"
-              inputMode="numeric"
-            />
-          </div>
-
-          <div className="step step-delay-5 pt-2">
-            <StatusMsg status={status} />
-          </div>
-
-          <div className="step step-delay-6">
-            <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner" />
-                  전송 중…
-                </>
-              ) : (
-                '시작하기'
-              )}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={handleVerify} className="space-y-6 text-center">
-          <div className="step step-delay-1">
-            <div className="section-label">인증번호 6자리</div>
-            <input
-              className="input"
-              type="text"
-              placeholder="000000"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              autoFocus
-            />
-          </div>
-
-          <div className="step step-delay-2">
-            <StatusMsg status={status} />
-          </div>
-
-          <div className="step step-delay-3">
-            <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner" />
-                  확인 중…
-                </>
-              ) : (
-                '확인'
-              )}
-            </button>
-          </div>
-
-          <div className="step step-delay-4 text-center">
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={handleSendCode}
-              disabled={resendCooldown > 0 || loading}
-            >
-              {resendCooldown > 0
-                ? `재전송 (${resendCooldown}초 후)`
-                : '인증번호 다시 받기'}
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  )
-}
-
-// ─── Step: Splash ─────────────────────────────────────────────────────────────
-function SplashStep({
+// ═══════════════════════════════════════════════════════════════════════════════
+// Messages List (unified landing)
+// ═══════════════════════════════════════════════════════════════════════════════
+function MessagesList({
+  onCompose,
+  onLoginRequest,
+  onNotice,
   session,
-  onStart,
-  onAdmin,
-}: {
-  session: Session
-  onStart: () => void
-  onAdmin: () => void
-}) {
-  return (
-    <div className="splash-layout step text-center">
-      <div className="splash-main">
-        <div className="step step-delay-1">
-          <StatsBanner />
-        </div>
-
-        <div className="step step-delay-2">
-          <h1 className="title text-5xl mb-2">
-            <span className="gradient-text">콕콕</span>
-          </h1>
-          <p className="subtitle">두근두근, 누구에게 마음을 전할까요?</p>
-        </div>
-
-        <div
-          className="splash-orb-wrapper step step-delay-3"
-          onClick={onStart}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && onStart()}
-          aria-label="시작하기"
-        >
-          <div className="splash-orb">
-            <div className="splash-orb-inner">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <filter id="orbHeartGlow">
-                    <feGaussianBlur stdDeviation="0.8" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                  fill="rgba(255,255,255,0.92)"
-                  filter="url(#orbHeartGlow)"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <p className="touch-hint step step-delay-4">눌러서 콕콕!</p>
-      </div>
-
-      <div className="splash-bottom step step-delay-5">
-        <button
-          type="button"
-          className="btn-admin-link"
-          onClick={onAdmin}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M20 21a8 8 0 1 0-16 0"/>
-          </svg>
-          내 콕콕 현황
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Step: Target ─────────────────────────────────────────────────────────────
-function TargetStep({
-  session,
-  onDone,
-  onBack,
-}: {
-  session: Session
-  onDone: (result: SubmitResult) => void
-  onBack: () => void
-}) {
-  const [targetPhone, setTargetPhone] = useState('')
-  const [relationship, setRelationship] = useState('')
-  const [hint, setHint] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [status, setStatus] = useState<Status>({ type: '', msg: '' })
-
-  const RELATIONSHIP_OPTIONS = [
-    { value: '같은 학교', label: '같은 학교' },
-    { value: '소꿉친구', label: '소꿉친구' },
-    { value: '같은 직장', label: '같은 직장' },
-    { value: '동네 친구', label: '동네 친구' },
-    { value: '같은 동아리', label: '같은 동아리' },
-    { value: '온라인에서', label: '온라인에서' },
-    { value: '기타', label: '기타' },
-  ]
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-
-    const cleanTarget = targetPhone.replace(/-/g, '')
-    const cleanSender = session.phone.replace(/-/g, '')
-
-    if (!isValidPhone(targetPhone)) {
-      setStatus({ type: 'error', msg: '올바른 휴대폰 번호를 입력해주세요.' })
-      return
-    }
-    if (!hint.trim()) {
-      setStatus({ type: 'error', msg: '힌트를 입력해주세요.' })
-      return
-    }
-    if (cleanTarget === cleanSender) {
-      setStatus({ type: 'error', msg: '자기 자신에게는 콕콕할 수 없어요.' })
-      return
-    }
-
-    setLoading(true)
-    setStatus({ type: '', msg: '' })
-
-    try {
-      const result = await submitKokkok({
-        sender_name: session.name,
-        sender_phone: session.phone,
-        target_phone: targetPhone,
-        relationship: relationship || undefined,
-        hint_text: hint.trim(),
-        verification_token: session.token,
-      })
-      onDone(result)
-    } catch (err) {
-      setStatus({
-        type: 'error',
-        msg: err instanceof Error ? err.message : '전송에 실패했어요.',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="step">
-      <BackButton onClick={onBack} />
-
-      <div className="step step-delay-1 mb-8">
-        <HeartIcon size={24} className="heart-icon mx-auto mb-3" />
-        <h2 className="title text-2xl">누구에게 콕콕?</h2>
-        <p className="subtitle">걱정 마세요, 누가 보냈는지 절대 모른답니다 🤫</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="step step-delay-2">
-          <div className="section-label">상대방 휴대폰 번호</div>
-          <input
-            className="input"
-            type="tel"
-            placeholder="010-0000-0000"
-            value={targetPhone}
-            onChange={(e) => setTargetPhone(formatPhone(e.target.value))}
-            inputMode="numeric"
-            autoFocus
-          />
-        </div>
-
-        <div className="step step-delay-3">
-          <div className="section-label">우리 사이는?</div>
-          <div className="relationship-grid">
-            {RELATIONSHIP_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`relationship-chip ${relationship === opt.value ? 'active' : ''}`}
-                onClick={() => setRelationship(relationship === opt.value ? '' : opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="step step-delay-4">
-          <div className="section-label">힌트</div>
-          <textarea
-            className="input"
-            placeholder="우리 자주 마주쳤었잖아요 ☕&#10;힌트를 남기면 상대방이 확인할 수 있어요."
-            value={hint}
-            onChange={(e) => setHint(e.target.value)}
-            maxLength={100}
-          />
-          <p className="text-right text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            {hint.length}/100
-          </p>
-        </div>
-
-        <div className="step step-delay-5">
-          <StatusMsg status={status} />
-        </div>
-
-        <div className="step step-delay-6 pt-2">
-          <button className="btn-primary" type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner" />
-                전송 중…
-              </>
-            ) : (
-              '콕! 💗'
-            )}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Step: Done ───────────────────────────────────────────────────────────────
-function DoneStep({
-  matched,
-  onAgain,
-}: {
-  matched: boolean
-  onAgain: () => void
-}) {
-  return (
-    <div className="step text-center">
-      <div className="step step-delay-1 mb-6">
-        <HeartIcon size={64} className="heart-icon mx-auto mb-4" />
-        {matched ? (
-          <>
-            <h2 className="title text-2xl gradient-text">매칭됐어요! 💗</h2>
-            <p className="subtitle mt-2">
-              서로 같은 마음이에요!<br />
-              문자로 연결 정보를 보내드렸어요.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="title text-2xl">전송 완료 💌</h2>
-            <p className="subtitle mt-2">
-              상대방에게 익명 메시지를 보냈어요.<br />
-              상대방도 콕콕하면 서로 연결돼요!
-            </p>
-          </>
-        )}
-      </div>
-
-      <div className="entry-card step step-delay-2" style={{ textAlign: 'left' }}>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {matched
-            ? '🎉 축하해요! 양쪽 모두에게 서로의 정보를 문자로 보냈어요.'
-            : '📱 상대방이 다른 누군가에게 콕콕을 보내면, 그 사람이 내가 좋아하는 사람이라면 매칭이 성사돼요.'}
-        </p>
-      </div>
-
-      <div className="step step-delay-3 mt-6 space-y-3">
-        <button className="btn-primary" type="button" onClick={onAgain}>
-          한 번 더 콕콕 💗
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Step: Admin ──────────────────────────────────────────────────────────────
-function AdminStep({
-  session,
-  onBack,
   onLogout,
 }: {
-  session: Session
-  onBack: () => void
+  onCompose: () => void
+  onLoginRequest: () => void
+  onNotice: (type: 'received' | 'sent') => void
+  session: Session | null
   onLogout: () => void
 }) {
+  const [stats, setStats] = useState<{ kokkoks: number; couples: number } | null>(null)
   const [tab, setTab] = useState<'received' | 'sent'>('received')
   const [receivedList, setReceivedList] = useState<KkokkEntry[]>([])
   const [sentList, setSentList] = useState<KkokkEntry[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const loadData = useCallback(async () => {
-    setLoading(true)
-
-    if (IS_DEMO) {
-      setReceivedList([])
-      setSentList([])
-      setLoading(false)
-      return
-    }
-
-    try {
-      // Hash the user's phone for querying
-      const encoder = new TextEncoder()
-      const buf = await crypto.subtle.digest(
-        'SHA-256',
-        encoder.encode(session.phone.replace(/-/g, ''))
-      )
-      const phoneHash = Array.from(new Uint8Array(buf))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-
-      const db = getSupabase()
-      if (!db) {
-        setLoading(false)
-        return
-      }
-
-      const [receivedRes, sentRes] = await Promise.all([
-        db
-          .from('kokkok_entries')
-          .select('id, hint_text, matched, created_at, reveal_token, match_id')
-          .eq('target_phone_hash', phoneHash)
-          .order('created_at', { ascending: false })
-          .limit(20),
-        db
-          .from('kokkok_entries')
-          .select('id, hint_text, matched, created_at, reveal_token')
-          .eq('sender_phone_hash', phoneHash)
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ])
-
-      setReceivedList((receivedRes.data as KkokkEntry[]) || [])
-      setSentList((sentRes.data as KkokkEntry[]) || [])
-    } catch (err) {
-      console.error('Failed to load admin data', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [session.phone])
+  const [listLoading, setListLoading] = useState(false)
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    async function fetchStats() {
+      if (IS_DEMO) { setStats({ kokkoks: 3 + STATS_CAL_A, couples: 1 + STATS_CAL_B }); return }
+      try {
+        const db = getSupabase()
+        if (!db) return
+        const [kRes, cRes] = await Promise.all([
+          db.from('kokkok_entries').select('id', { count: 'exact', head: true }),
+          db.from('kokkok_entries').select('id', { count: 'exact', head: true }).eq('matched', true),
+        ])
+        setStats({
+          kokkoks: (kRes.count ?? 0) + STATS_CAL_A,
+          couples: Math.floor((cRes.count ?? 0) / 2) + STATS_CAL_B,
+        })
+      } catch { /* silent */ }
+    }
+    fetchStats()
+  }, [])
+
+  const loadEntries = useCallback(async () => {
+    if (!session) return
+    setListLoading(true)
+    if (IS_DEMO) { setReceivedList([]); setSentList([]); setListLoading(false); return }
+    try {
+      const encoder = new TextEncoder()
+      const buf = await crypto.subtle.digest('SHA-256', encoder.encode(session.phone.replace(/-/g, '')))
+      const phoneHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+      const db = getSupabase()
+      if (!db) { setListLoading(false); return }
+      const [receivedRes, sentRes] = await Promise.all([
+        db.from('kokkok_entries').select('id, hint_text, matched, created_at, reveal_token, match_id')
+          .eq('target_phone_hash', phoneHash).order('created_at', { ascending: false }).limit(20),
+        db.from('kokkok_entries').select('id, hint_text, matched, created_at, reveal_token')
+          .eq('sender_phone_hash', phoneHash).order('created_at', { ascending: false }).limit(20),
+      ])
+      setReceivedList((receivedRes.data as KkokkEntry[]) || [])
+      setSentList((sentRes.data as KkokkEntry[]) || [])
+    } catch (err) { console.error('Failed to load entries', err) }
+    finally { setListLoading(false) }
+  }, [session])
+
+  useEffect(() => { loadEntries() }, [loadEntries])
 
   function formatDate(iso: string) {
     const d = new Date(iso)
-    return d.toLocaleDateString('ko-KR', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   const list = tab === 'received' ? receivedList : sentList
 
   return (
-    <div className="step">
-      <BackButton onClick={onBack} />
+    <div className="ios-app landing-app">
+      {/* ── Stats bar ───────────────────────────────────────────── */}
+      {stats && (
+        <div className="landing-stats-bar">
+          <div className="landing-stat-item">
+            <span className="landing-stat-num">{stats.kokkoks}</span>
+            <span className="landing-stat-label">콕콕</span>
+          </div>
+          <span className="landing-stat-dot">·</span>
+          <div className="landing-stat-item">
+            <span className="landing-stat-num">{stats.couples}</span>
+            <span className="landing-stat-label">커플 탄생</span>
+          </div>
+        </div>
+      )}
 
-      <div className="step step-delay-1 mb-6">
-        <h2 className="title text-2xl">내 콕콕</h2>
-        <p className="subtitle">{session.name}님의 콕콕 현황</p>
-      </div>
+      {/* ── User bar (above tabs when logged in) ───────────────── */}
+      {session && (
+        <div className="landing-user-section">
+          <div className="landing-user">
+            <span>👤 {session.name}</span>
+            <button type="button" className="landing-user-logout" onClick={onLogout}>로그아웃</button>
+          </div>
+          {/* Match alert */}
+          {(receivedList.some(e => e.matched) || sentList.some(e => e.matched)) && (
+            <div className="landing-match-alert">
+              <span className="landing-match-alert-sparkle">✨</span>
+              누군가도 나를 좋아하고 있어요!!
+              <span className="landing-match-alert-sparkle">✨</span>
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="tab-bar step step-delay-2">
+      {/* ── Tabs ─────────────────────────────────────────────────── */}
+      <div className={`landing-tabs ${session ? 'has-user' : ''}`}>
         <button
           type="button"
-          className={`tab-btn ${tab === 'received' ? 'active' : ''}`}
+          className={`landing-tab ${tab === 'received' ? 'active' : ''}`}
           onClick={() => setTab('received')}
         >
-          받은 콕콕 {receivedList.length > 0 && `(${receivedList.length})`}
+          <span className="landing-tab-icon">📩</span>
+          <span>받은 콕콕</span>
+          {session && receivedList.length > 0 && <span className="landing-tab-badge">{receivedList.length}</span>}
         </button>
         <button
           type="button"
-          className={`tab-btn ${tab === 'sent' ? 'active' : ''}`}
+          className={`landing-tab ${tab === 'sent' ? 'active' : ''}`}
           onClick={() => setTab('sent')}
         >
-          보낸 콕콕 {sentList.length > 0 && `(${sentList.length})`}
+          <span className="landing-tab-icon">📤</span>
+          <span>보낸 콕콕</span>
+          {session && sentList.length > 0 && <span className="landing-tab-badge">{sentList.length}</span>}
         </button>
       </div>
 
-      <div className="step step-delay-3">
-        {loading ? (
-          <div className="empty-state">
-            <span className="spinner" /> 불러오는 중…
+      {/* ── Content ──────────────────────────────────────────────── */}
+      <div className="landing-content">
+        {!session ? (
+          /* Not logged in: show example messages */
+          tab === 'received' ? (
+            <div className="landing-examples">
+              <button type="button" className="landing-example-cell" onClick={() => onNotice('received')}>
+                <div className="landing-example-avi"><KokkokLogo size={22} color="white" /></div>
+                <div className="landing-example-body">
+                  <div className="landing-example-row">
+                    <span className="landing-example-name">콕콕</span>
+                    <span className="landing-example-time">방금</span>
+                  </div>
+                  <p className="landing-example-preview">누군가 당신을 좋아합니다 💌</p>
+                </div>
+                <span className="landing-example-chevron"><ChevronRight /></span>
+              </button>
+              <button type="button" className="landing-example-cell" onClick={() => onNotice('received')}>
+                <div className="landing-example-avi"><KokkokLogo size={22} color="white" /></div>
+                <div className="landing-example-body">
+                  <div className="landing-example-row">
+                    <span className="landing-example-name">콕콕</span>
+                    <span className="landing-example-time">어제</span>
+                  </div>
+                  <p className="landing-example-preview">매칭됐어요! 서로 같은 마음이에요 🎉</p>
+                </div>
+                <span className="landing-example-chevron"><ChevronRight /></span>
+              </button>
+            </div>
+          ) : (
+            <div className="landing-examples">
+              <button type="button" className="landing-example-cell" onClick={() => onNotice('sent')}>
+                <div className="landing-example-avi sent">📤</div>
+                <div className="landing-example-body">
+                  <div className="landing-example-row">
+                    <span className="landing-example-name">010-****-1234</span>
+                    <span className="landing-example-time">방금</span>
+                  </div>
+                  <p className="landing-example-preview">우리 자주 마주쳤었잖아요 ☕</p>
+                </div>
+                <span className="landing-example-chevron"><ChevronRight /></span>
+              </button>
+              <button type="button" className="landing-example-cell" onClick={() => onNotice('sent')}>
+                <div className="landing-example-avi sent">📤</div>
+                <div className="landing-example-body">
+                  <div className="landing-example-row">
+                    <span className="landing-example-name">010-****-5678</span>
+                    <span className="landing-example-time">3일 전</span>
+                  </div>
+                  <p className="landing-example-preview">같은 수업 듣는 사람이에요 📚 · 매칭 대기 중</p>
+                </div>
+                <span className="landing-example-chevron"><ChevronRight /></span>
+              </button>
+            </div>
+          )
+        ) : listLoading ? (
+          <div className="landing-empty">
+            <span className="ios-spinner ios-spinner-dark" /> 불러오는 중…
           </div>
         ) : list.length === 0 ? (
-          <div className="empty-state">
-            {tab === 'received'
-              ? '아직 받은 콕콕이 없어요 💭'
-              : '아직 보낸 콕콕이 없어요 💭'}
+          <div className="landing-empty">
+            {tab === 'received' ? '아직 받은 콕콕이 없어요 💭' : '아직 보낸 콕콕이 없어요 💭'}
           </div>
         ) : (
-          list.map((entry) => (
-            <div
-              key={entry.id}
-              className={`entry-card ${entry.matched ? 'matched' : ''}`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {tab === 'received'
-                    ? entry.matched
-                      ? `💗 ${entry.partner_name || '???'} (${entry.partner_phone || '???'})`
-                      : '익명의 누군가'
-                    : entry.matched
-                      ? '매칭 성공! 💗'
-                      : '대기 중…'}
-                </span>
-                {entry.matched && <span className="match-badge">💗 매칭</span>}
+          <div className="landing-entries">
+            {list.map(entry => (
+              <div key={entry.id} className={`landing-entry ${entry.matched ? 'matched' : ''}`}>
+                <div className="landing-entry-avi">{entry.matched ? '💗' : '💌'}</div>
+                <div className="landing-entry-body">
+                  <div className="landing-entry-name">
+                    {tab === 'received'
+                      ? entry.matched ? `${entry.partner_name || '???'}` : '익명의 누군가'
+                      : entry.matched ? '매칭 성공!' : '대기 중…'}
+                  </div>
+                  {entry.hint_text && <div className="landing-entry-hint">&ldquo;{entry.hint_text}&rdquo;</div>}
+                  <div className="landing-entry-time">{formatDate(entry.created_at)}</div>
+                </div>
+                {entry.matched ? (
+                  <span className="landing-match-pill">매칭됨</span>
+                ) : (
+                  <span className="landing-pending-pill">대기</span>
+                )}
               </div>
-
-              {entry.hint_text && (
-                <p
-                  className="text-sm mt-2"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  &ldquo;{entry.hint_text}&rdquo;
-                </p>
-              )}
-
-              <p className="entry-meta">{formatDate(entry.created_at)}</p>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
-      <hr className="divider step step-delay-4" />
-
-      <div className="step step-delay-5 text-center space-y-3">
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => {
-            clearSession()
-            onLogout()
-          }}
-        >
-          로그아웃
+      {/* ── CTA ──────────────────────────────────────────────────── */}
+      <div className="landing-cta-area">
+        <button className="landing-cta" type="button" onClick={onCompose}>
+          <span className="landing-cta-icon"><ComposeIcon /></span>
+          콕콕 보내기
         </button>
+        {!session && (
+          <button type="button" className="landing-login-link" onClick={onLoginRequest}>
+            이미 보낸 사람이라면? <span>로그인하기</span>
+          </button>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="ios-share-footer">
+        <ShareButton />
+        <FeedbackButton />
       </div>
     </div>
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function HomePage() {
-  const [step, setStep] = useState<Step>('landing')
+// ═══════════════════════════════════════════════════════════════════════════════
+// Notice View (iMessage-style chat with info from 콕콕)
+// ═══════════════════════════════════════════════════════════════════════════════
+function NoticeView({
+  type,
+  onCompose,
+  onBack,
+}: {
+  type: 'received' | 'sent'
+  onCompose: () => void
+  onBack: () => void
+}) {
+  const isReceived = type === 'received'
+
+  return (
+    <div className="ios-chat-container">
+      {/* Nav */}
+      <div className="ios-chat-nav">
+        <div className="ios-chat-nav-inner">
+          <button className="ios-chat-nav-back" type="button" onClick={onBack}>
+            <ChevronLeft />
+          </button>
+          <div className="ios-chat-nav-center">
+            <span className="ios-chat-nav-name">콕콕</span>
+          </div>
+          <div style={{ width: 44 }} />
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div className="ios-chat-area">
+        <div className="ios-chat-spacer" />
+
+        {/* Avatar + name header */}
+        <div className="notice-profile">
+          <div className="notice-profile-avi"><KokkokLogo size={26} color="white" /></div>
+          <span className="notice-profile-name">콕콕</span>
+        </div>
+
+        <div className="ios-time-header">오늘</div>
+
+        {isReceived ? (
+          <>
+            <div className="ios-bubble ios-bubble-received">
+              안녕하세요! 콕콕이에요
+            </div>
+            <div className="ios-bubble ios-bubble-received">
+              누군가 당신에게 익명으로 마음을 전했어요!
+            </div>
+            <div className="ios-bubble ios-bubble-received">
+              콕콕은 좋아하는 사람에게 익명으로 마음을 전하는 서비스예요.{'\n\n'}상대방이 누군지는 매칭 전까지 비밀이에요 🤫
+            </div>
+            <div className="ios-bubble ios-bubble-received">
+              받은 메시지함에서는{'\n\n'}• 누군가 나에게 보낸 콕콕을 확인{'\n'}• 힌트로 누가 보냈는지 추측{'\n'}• 서로 콕콕하면 매칭 성공!
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="ios-bubble ios-bubble-received">
+              여기는 보낸 메시지함이에요
+            </div>
+            <div className="ios-bubble ios-bubble-received">
+              콕콕을 보내면 상대방에게 익명 메시지가 전달돼요.{'\n\n'}내 번호는 절대 노출되지 않아요 🔒
+            </div>
+            <div className="ios-bubble ios-bubble-received">
+              보낸 메시지함에서는{'\n\n'}• 내가 보낸 콕콕 목록 확인{'\n'}• 매칭되면 &quot;매칭됨&quot; 표시{'\n'}• 매칭 전이면 &quot;대기 중&quot;
+            </div>
+          </>
+        )}
+
+        {/* CTA as a bubble */}
+        <button type="button" className="notice-cta-bubble" onClick={onCompose}>
+          콕콕하러 가기 →
+        </button>
+
+        <div style={{ height: 24 }} />
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Login Page (for 받은 콕콕 click)
+// ═══════════════════════════════════════════════════════════════════════════════
+function LoginPage({
+  onDone,
+  onBack,
+}: {
+  onDone: (session: Session) => void
+  onBack: () => void
+}) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function startCooldown() {
+    setCooldown(60)
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(cooldownRef.current!); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  async function handleSendCode() {
+    if (!name.trim()) { setError('이름을 입력해주세요.'); return }
+    if (!isValidPhone(phone)) { setError('올바른 휴대폰 번호를 입력해주세요.'); return }
+    setLoading(true); setError(''); setSuccess('')
+    try {
+      await sendVerification(phone)
+      setCodeSent(true)
+      setSuccess('인증번호가 발송되었어요!')
+      startCooldown()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '전송에 실패했어요.')
+    } finally { setLoading(false) }
+  }
+
+  async function handleVerify() {
+    if (code.length < 6) { setError('6자리 인증번호를 입력해주세요.'); return }
+    setLoading(true); setError('')
+    try {
+      const result = await verifyCode(phone, code)
+      if (!result.verified) { setError(result.error || '인증번호가 틀렸어요.'); return }
+      const session: Session = { name: name.trim(), phone, token: result.token, savedAt: Date.now() }
+      saveSession(session)
+      onDone(session)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '인증에 실패했어요.')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="ios-app">
+      <div className="ios-nav">
+        <div className="ios-nav-inner">
+          <button className="ios-nav-btn ios-nav-btn-left" type="button" onClick={onBack}>
+            <ChevronLeft size={20} />
+          </button>
+          <span className="ios-nav-title">로그인</span>
+          <div style={{ minWidth: 60 }} />
+        </div>
+      </div>
+
+      <div className="login-page">
+        <div className="login-header">
+          <div className="login-icon"><KokkokLogo size={48} /></div>
+          <h2 className="login-title">본인 확인</h2>
+          <p className="login-subtitle">받은 콕콕을 확인하려면<br />본인 인증이 필요해요</p>
+        </div>
+
+        {!codeSent ? (
+          <div className="login-form">
+            <div className="ios-form-group">
+              <div className="ios-form-label">이름</div>
+              <input className="ios-form-input" type="text" placeholder="홍길동" value={name} onChange={e => setName(e.target.value)} maxLength={20} autoComplete="name" />
+            </div>
+            <div className="ios-form-group">
+              <div className="ios-form-label">내 휴대폰 번호</div>
+              <input className="ios-form-input" type="tel" placeholder="010-0000-0000" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} autoComplete="tel" inputMode="numeric" />
+            </div>
+            {error && <div className="ios-sheet-status ios-sheet-status-error">{error}</div>}
+            <button className="ios-sheet-btn ios-sheet-btn-primary" type="button" disabled={loading} onClick={handleSendCode}>
+              {loading ? <><span className="ios-spinner" />전송 중…</> : '인증번호 받기'}
+            </button>
+          </div>
+        ) : (
+          <div className="login-form">
+            <div className="ios-form-group">
+              <div className="ios-form-label">인증번호 6자리</div>
+              <input className="ios-form-input" type="text" placeholder="000000" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" autoFocus style={{ textAlign: 'center', fontSize: 24, letterSpacing: '0.2em', fontWeight: 600 }} />
+            </div>
+            {error && <div className="ios-sheet-status ios-sheet-status-error">{error}</div>}
+            {success && <div className="ios-sheet-status ios-sheet-status-success">{success}</div>}
+            <button className="ios-sheet-btn ios-sheet-btn-primary" type="button" disabled={loading} onClick={handleVerify}>
+              {loading ? <><span className="ios-spinner" />확인 중…</> : '확인'}
+            </button>
+            <button className="ios-sheet-btn ios-sheet-btn-ghost" type="button" disabled={cooldown > 0 || loading} onClick={handleSendCode}>
+              {cooldown > 0 ? `재전송 (${cooldown}초)` : '인증번호 다시 받기'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Compose View (iMessage-style sending)
+// ═══════════════════════════════════════════════════════════════════════════════
+function ComposeView({
+  session,
+  onDone,
+  onCancel,
+  onSessionCreated,
+}: {
+  session: Session | null
+  onDone: (matched: boolean) => void
+  onCancel: () => void
+  onSessionCreated: (s: Session) => void
+}) {
+  const [targetPhone, setTargetPhone] = useState('')
+  const [targetConfirmed, setTargetConfirmed] = useState(false)
+  const [relationship, setRelationship] = useState('')
+  const [hint, setHint] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [showVerify, setShowVerify] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [delivered, setDelivered] = useState(false)
+  const [matched, setMatched] = useState(false)
+  // step: 'input' (typing hint) → 'confirm' (preview + yes/no) → 'done'
+  const [step, setStep] = useState<'input' | 'confirm' | 'done'>('input')
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  function scrollToBottom() {
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+  }
+
+  // Auto-advance when 11 digits entered
+  function handlePhoneChange(value: string) {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    setTargetPhone(digits)
+    if (digits.length === 11 && isValidPhone(digits)) {
+      setTimeout(() => {
+        setTargetConfirmed(true)
+        setMessages([{ id: 'time', type: 'time', text: nowTimeString() }])
+        setTimeout(() => inputRef.current?.focus(), 300)
+      }, 200)
+    }
+  }
+
+  function handleEditPhone() {
+    setTargetConfirmed(false)
+    setMessages([])
+    setRelationship('')
+    setHint('')
+    setStep('input')
+  }
+
+  // Step 1: user presses enter → keep preview card, show confirm below it
+  function handleSubmitHint() {
+    if (!hint.trim()) return
+    setStep('confirm')
+    scrollToBottom()
+  }
+
+  // Step 2: user confirms "예"
+  function handleConfirmSend() {
+    if (!session) {
+      setShowVerify(true)
+    } else {
+      doSubmit(session)
+    }
+  }
+
+  // Step 2 alternative: user cancels
+  function handleCancelConfirm() {
+    setStep('input')
+    setTimeout(() => inputRef.current?.focus(), 200)
+  }
+
+  async function doSubmit(sess: Session) {
+    setSubmitting(true)
+    setShowVerify(false)
+    scrollToBottom()
+    try {
+      const result = await submitKokkok({
+        sender_name: sess.name,
+        sender_phone: sess.phone,
+        target_phone: targetPhone,
+        relationship: relationship || undefined,
+        hint_text: hint.trim(),
+        verification_token: sess.token,
+      })
+      setDelivered(true)
+      setMatched(result.matched)
+      setStep('done')
+
+      // Show success popup
+      setShowSuccessPopup(true)
+      setTimeout(() => {
+        setShowSuccessPopup(false)
+        onDone(result.matched)
+      }, 2000)
+
+      if (result.matched) {
+        setMessages(prev => [
+          ...prev,
+          { id: 'match-sys', type: 'system', text: '매칭 성공!' },
+          { id: 'match-msg', type: 'received', text: '서로 같은 마음이에요!\n문자로 상대방 정보를 보내드렸어요.' },
+        ])
+      }
+      scrollToBottom()
+    } catch {
+      setMessages(prev => [...prev, { id: 'err', type: 'system', text: '전송에 실패했어요. 다시 시도해주세요.' }])
+      setStep('input')
+    } finally { setSubmitting(false) }
+  }
+
+  function handleVerified(sess: Session) {
+    onSessionCreated(sess)
+    doSubmit(sess)
+  }
+
+  const displayPhone = formatPhone(targetPhone)
+
+  return (
+    <div className="ios-chat-container">
+      {/* ── Nav ──────────────────────────────────────────────────── */}
+      <div className="ios-nav">
+        <div className="ios-nav-inner">
+          <button className="ios-nav-btn ios-nav-btn-left" type="button" onClick={onCancel}>
+            {targetConfirmed ? <ChevronLeft /> : '취소'}
+          </button>
+          <span className="ios-nav-title">새로운 메시지</span>
+          <div style={{ minWidth: 60 }} />
+        </div>
+      </div>
+
+      {/* ── To: field ────────────────────────────────────────────── */}
+      <div className="ios-to-bar">
+        <span className="ios-to-label">받는 사람:</span>
+        {targetConfirmed ? (
+          <button type="button" className="ios-to-chip" onClick={step === 'input' ? handleEditPhone : undefined}>
+            {displayPhone}
+          </button>
+        ) : (
+          <input
+            className="ios-to-input"
+            type="tel"
+            placeholder="전화번호 입력"
+            value={formatPhone(targetPhone)}
+            onChange={e => handlePhoneChange(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && isValidPhone(targetPhone)) {
+                e.preventDefault()
+                setTargetConfirmed(true)
+                setMessages([{ id: 'time', type: 'time', text: nowTimeString() }])
+                setTimeout(() => inputRef.current?.focus(), 300)
+              }
+            }}
+            inputMode="numeric"
+            autoFocus
+          />
+        )}
+      </div>
+
+      {/* ── Chat area ────────────────────────────────────────────── */}
+      <div className="ios-chat-area">
+        <div className="ios-chat-spacer" />
+
+        {!targetConfirmed && (
+          <div className="compose-guide">
+            <div className="compose-guide-icon">💌</div>
+            <p className="compose-guide-title">마음을 전할 상대의 번호를 입력하세요</p>
+            <p className="compose-guide-desc">콕콕이 대신 익명 메시지를 보내드려요<br />내 번호는 절대 노출되지 않아요</p>
+          </div>
+        )}
+
+        {/* Live preview card (input & confirm steps) */}
+        {targetConfirmed && (step === 'input' || step === 'confirm') && (
+          <div className="compose-guide" style={{ paddingBottom: step === 'confirm' ? 0 : 8, paddingTop: 12 }}>
+            <p className="compose-guide-desc" style={{ marginBottom: 12 }}>
+              상대방에게 이런 메시지가 전달돼요
+            </p>
+            <div className="compose-preview-card">
+              <div className="compose-preview-header">
+                <span className="compose-preview-from">콕콕</span>
+                <span className="compose-preview-time">지금</span>
+              </div>
+              <p className="compose-preview-body">
+                누군가 당신을 좋아합니다 💌
+              </p>
+              {relationship && (
+                <p className="compose-preview-meta">관계: {relationship}</p>
+              )}
+              <p className="compose-preview-meta">
+                힌트: {hint || '(아래에 힌트를 작성해주세요)'}
+              </p>
+            </div>
+
+            {/* Confirm question + buttons (centered, below card) */}
+            {step === 'confirm' && (
+              <div className="compose-confirm-section">
+                <p className="compose-confirm-question">이대로 상대방에게 문자를 보내드릴까요?</p>
+                <div className="compose-confirm-btns">
+                  <button type="button" className="compose-confirm-yes" onClick={handleConfirmSend}>
+                    네, 보내주세요!
+                  </button>
+                  <button type="button" className="compose-confirm-no" onClick={handleCancelConfirm}>
+                    다시 작성할게요
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {messages.map(msg => {
+          if (msg.type === 'time') return <div key={msg.id} className="ios-time-header">{msg.text}</div>
+          if (msg.type === 'system') return <div key={msg.id} className="ios-bubble ios-bubble-system">{msg.text}</div>
+          if (msg.type === 'received') return <div key={msg.id} className="ios-bubble ios-bubble-received">{msg.text}</div>
+          return <div key={msg.id} className="ios-bubble ios-bubble-sent">{msg.text}</div>
+        })}
+
+        {submitting && (
+          <div className="ios-typing"><div className="ios-typing-dot" /><div className="ios-typing-dot" /><div className="ios-typing-dot" /></div>
+        )}
+        {delivered && <div className="ios-delivered">전달됨</div>}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* ── Bottom: input (only during 'input' step) ─────────────── */}
+      {targetConfirmed && step === 'input' && (
+        <>
+          <div className="compose-section-label">우리 사이는? (선택)</div>
+          <div className="ios-rel-bar">
+            {RELATIONSHIPS.map(r => (
+              <button key={r} type="button" className={`ios-rel-tag ${relationship === r ? 'active' : ''}`} onClick={() => setRelationship(relationship === r ? '' : r)}>
+                {r}
+              </button>
+            ))}
+          </div>
+          <div className="ios-input-bar">
+            <div className="ios-input-wrapper">
+              <textarea
+                ref={inputRef}
+                className="ios-input-field"
+                placeholder="상대방에게 당신이 누군지 알려줄 힌트를 적어주세요 (ex. 우리 도서관에서 자주 마주친 사이에요!)"
+                value={hint}
+                onChange={e => setHint(e.target.value.slice(0, 100))}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitHint() } }}
+                rows={1}
+              />
+            </div>
+            <button className="ios-send-btn" type="button" disabled={!hint.trim()} onClick={handleSubmitHint}>
+              <SendArrow />
+            </button>
+          </div>
+          <div className="compose-char-count">{hint.length}/100</div>
+        </>
+      )}
+
+      {/* ── Verification Sheet ───────────────────────────────────── */}
+      {showVerify && (
+        <VerificationSheet
+          onVerified={handleVerified}
+          onClose={() => {
+            setShowVerify(false)
+            setStep('confirm')
+          }}
+        />
+      )}
+
+      {/* ── Success Popup ────────────────────────────────────────── */}
+      {showSuccessPopup && (
+        <div className="compose-success-overlay">
+          <div className="compose-success-popup">
+            <div className="compose-success-icon">✓</div>
+            <p className="compose-success-text">메시지가 성공적으로<br />전송됐습니다!</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Verification Sheet (compose last step)
+// ═══════════════════════════════════════════════════════════════════════════════
+function VerificationSheet({
+  onVerified,
+  onClose,
+}: {
+  onVerified: (session: Session) => void
+  onClose: () => void
+}) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function startCooldown() {
+    setCooldown(60)
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => { if (prev <= 1) { clearInterval(cooldownRef.current!); return 0 } return prev - 1 })
+    }, 1000)
+  }
+
+  async function handleSendCode() {
+    if (!name.trim()) { setError('이름을 입력해주세요.'); return }
+    if (!isValidPhone(phone)) { setError('올바른 휴대폰 번호를 입력해주세요.'); return }
+    setLoading(true); setError(''); setSuccess('')
+    try {
+      await sendVerification(phone)
+      setCodeSent(true); setSuccess('인증번호가 발송되었어요!'); startCooldown()
+    } catch (err) { setError(err instanceof Error ? err.message : '전송에 실패했어요.') }
+    finally { setLoading(false) }
+  }
+
+  async function handleVerify() {
+    if (code.length < 6) { setError('6자리 인증번호를 입력해주세요.'); return }
+    setLoading(true); setError('')
+    try {
+      const result = await verifyCode(phone, code)
+      if (!result.verified) { setError(result.error || '인증번호가 틀렸어요.'); return }
+      const session: Session = { name: name.trim(), phone, token: result.token, savedAt: Date.now() }
+      saveSession(session); onVerified(session)
+    } catch (err) { setError(err instanceof Error ? err.message : '인증에 실패했어요.') }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="ios-sheet-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ios-sheet">
+        <div className="ios-sheet-handle" />
+        <h2 className="ios-sheet-title">본인 확인</h2>
+        <p className="ios-sheet-subtitle">메시지를 보내기 전에<br />본인 확인이 필요해요</p>
+        {!codeSent ? (
+          <>
+            <div className="ios-form-group">
+              <div className="ios-form-label">이름</div>
+              <input className="ios-form-input" type="text" placeholder="홍길동" value={name} onChange={e => setName(e.target.value)} maxLength={20} autoComplete="name" />
+            </div>
+            <div className="ios-form-group">
+              <div className="ios-form-label">내 휴대폰 번호</div>
+              <input className="ios-form-input" type="tel" placeholder="010-0000-0000" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} autoComplete="tel" inputMode="numeric" />
+            </div>
+            {error && <div className="ios-sheet-status ios-sheet-status-error">{error}</div>}
+            <button className="ios-sheet-btn ios-sheet-btn-primary" type="button" disabled={loading} onClick={handleSendCode}>
+              {loading ? <><span className="ios-spinner" />전송 중…</> : '인증번호 받기'}
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="ios-form-group">
+              <div className="ios-form-label">인증번호 6자리</div>
+              <input className="ios-form-input" type="text" placeholder="000000" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" autoFocus style={{ textAlign: 'center', fontSize: 24, letterSpacing: '0.2em', fontWeight: 600 }} />
+            </div>
+            {error && <div className="ios-sheet-status ios-sheet-status-error">{error}</div>}
+            {success && <div className="ios-sheet-status ios-sheet-status-success">{success}</div>}
+            <button className="ios-sheet-btn ios-sheet-btn-primary" type="button" disabled={loading} onClick={handleVerify}>
+              {loading ? <><span className="ios-spinner" />확인 중…</> : '확인'}
+            </button>
+            <button className="ios-sheet-btn ios-sheet-btn-ghost" type="button" disabled={cooldown > 0 || loading} onClick={handleSendCode}>
+              {cooldown > 0 ? `재전송 (${cooldown}초)` : '인증번호 다시 받기'}
+            </button>
+          </>
+        )}
+        <button className="ios-sheet-btn ios-sheet-btn-ghost" type="button" onClick={onClose} style={{ marginTop: 8, color: 'var(--ios-label-secondary)' }}>취소</button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Shared components
+// ═══════════════════════════════════════════════════════════════════════════════
+function ShareButton() {
+  const [copied, setCopied] = useState(false)
+  const shareUrl = 'https://kokkok-nu.vercel.app'
+  async function handleShare() {
+    if (navigator.share) { try { await navigator.share({ title: '콕콕', text: '익명으로 마음을 전해보세요 💗 콕콕', url: shareUrl }); return } catch { /* cancelled */ } }
+    try { await navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* no clipboard */ }
+  }
+  return (
+    <button type="button" className="ios-share-btn" onClick={handleShare}>
+      {copied ? '✓ 링크 복사됨!' : (<>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>공유하기
+      </>)}
+    </button>
+  )
+}
+
+function FeedbackButton() {
+  return (
+    <button type="button" className="ios-share-btn" onClick={() => window.open('https://forms.gle/nmvFaiFGKAZU5wp2A', '_blank')}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>기능제안
+    </button>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Main
+// ═══════════════════════════════════════════════════════════════════════════════
+export default function MainPage() {
+  const [phase, setPhase] = useState<Phase>('list')
+  const [noticeType, setNoticeType] = useState<'received' | 'sent'>('received')
   const [session, setSession] = useState<Session | null>(null)
-  const [matchResult, setMatchResult] = useState<SubmitResult | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     const existing = getSession()
-    if (existing) {
-      setSession(existing)
-      setStep('splash')
-    }
+    if (existing) setSession(existing)
   }, [])
 
   useEffect(() => {
     if (!mounted) return
-    pageview(STEP_PAGE[step])
-    trackScreen(step, STEP_PAGE[step])
-  }, [step, mounted])
+    const pages: Record<Phase, string> = { list: '/', compose: '/compose', login: '/login', notice: '/notice' }
+    pageview(pages[phase])
+    trackScreen(phase, pages[phase])
+  }, [phase, mounted])
 
-  function handleLoginDone(s: Session) {
-    setSession(s)
-    setStep('splash')
-  }
-
-  function handleSubmitDone(result: SubmitResult) {
-    setMatchResult(result)
-    setStep('done')
-  }
-
-  if (!mounted) {
-    // SSR placeholder — avoids hydration mismatch
-    return (
-      <>
-        <div className="bg-animated" aria-hidden="true" />
-        <div className="app-shell">
-          <div className="card" style={{ minHeight: 300 }} />
-        </div>
-      </>
-    )
-  }
+  if (!mounted) return <div className="ios-app" style={{ minHeight: '100svh' }} />
 
   return (
     <>
-      <div className="bg-animated" aria-hidden="true" />
-      <Particles />
-
-      <main className="app-shell">
-        <div className="card">
-          {step === 'landing' && <LandingStep onStart={() => setStep('login')} />}
-
-          {step === 'login' && <LoginStep onDone={handleLoginDone} />}
-
-          {step === 'splash' && session && (
-            <SplashStep
-              session={session}
-              onStart={() => setStep('target')}
-              onAdmin={() => setStep('admin')}
-            />
-          )}
-
-          {step === 'target' && session && (
-            <TargetStep
-              session={session}
-              onDone={handleSubmitDone}
-              onBack={() => setStep('splash')}
-            />
-          )}
-
-          {step === 'done' && matchResult && (
-            <DoneStep
-              matched={matchResult.matched}
-              onAgain={() => setStep('target')}
-            />
-          )}
-
-          {step === 'admin' && session && (
-            <AdminStep
-              session={session}
-              onBack={() => setStep('splash')}
-              onLogout={() => {
-                setSession(null)
-                setStep('landing')
-              }}
-            />
-          )}
-        </div>
-
-        <div className="share-footer">
-          <ShareButton />
-          <FeedbackButton />
-        </div>
-      </main>
+      {phase === 'list' && (
+        <MessagesList
+          session={session}
+          onCompose={() => setPhase('compose')}
+          onLoginRequest={() => setPhase('login')}
+          onNotice={(type) => { setNoticeType(type); setPhase('notice') }}
+          onLogout={() => { clearSession(); setSession(null) }}
+        />
+      )}
+      {phase === 'compose' && (
+        <ComposeView
+          session={session}
+          onDone={() => setPhase('list')}
+          onCancel={() => setPhase('list')}
+          onSessionCreated={s => setSession(s)}
+        />
+      )}
+      {phase === 'login' && (
+        <LoginPage
+          onDone={s => { setSession(s); setPhase('list') }}
+          onBack={() => setPhase('list')}
+        />
+      )}
+      {phase === 'notice' && (
+        <NoticeView
+          type={noticeType}
+          onCompose={() => setPhase('compose')}
+          onBack={() => setPhase('list')}
+        />
+      )}
     </>
   )
 }

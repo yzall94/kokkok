@@ -77,6 +77,10 @@ async function callApi<T>(path: string, body: object): Promise<T> {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function sendVerification(phone: string): Promise<{ success: boolean }> {
+  if (IS_DEMO) {
+    await new Promise((r) => setTimeout(r, 500))
+    return { success: true }
+  }
   return callApi('/api/send-verification', { phone })
 }
 
@@ -90,6 +94,13 @@ export async function verifyCode(
   phone: string,
   code: string
 ): Promise<VerifyResult> {
+  if (IS_DEMO) {
+    await new Promise((r) => setTimeout(r, 500))
+    if (code === '000000') {
+      return { verified: true, token: 'demo-token-' + Date.now() }
+    }
+    return { verified: false, token: '', error: '인증번호가 틀렸어요. (데모: 000000)' }
+  }
   return callApi('/api/verify-code', { phone, code })
 }
 

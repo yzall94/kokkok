@@ -26,20 +26,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 환경변수 로딩 확인
-    const envStatus = {
-      hasApiKey: !!API_KEY,
-      hasApiSecret: !!API_SECRET,
-      hasSender: !!SENDER,
-    }
-    console.log('[send-verification] env status:', envStatus)
-
+    // Dev mode: skip SMS, use fixed code 000000
     if (!API_KEY || !API_SECRET || !SENDER) {
-      console.warn('[send-verification] missing env vars — SMS not sent')
-      return NextResponse.json(
-        { error: `SMS 설정이 누락되었어요. (key:${envStatus.hasApiKey} secret:${envStatus.hasApiSecret} sender:${envStatus.hasSender})` },
-        { status: 500 }
-      )
+      console.log('[send-verification] DEV MODE — code: 000000')
+      saveCode(cleanPhone, '000000')
+      return NextResponse.json({ success: true })
     }
 
     const code = generateCode()
