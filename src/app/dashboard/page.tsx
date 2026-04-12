@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { getSupabase } from '@/lib/supabase'
 import { pageview, trackScreen } from '@/lib/ga'
 
 const IS_DEMO =
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL === 'YOUR_SUPABASE_URL'
+  !process.env.NEXT_PUBLIC_TURSO_CONFIGURED ||
+  process.env.NEXT_PUBLIC_TURSO_CONFIGURED !== 'true'
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'kokkok2026'
 
@@ -339,29 +338,9 @@ export default function DashboardPage() {
     }
 
     try {
-      const db = getSupabase()
-      if (!db) { setLoading(false); return }
-
-      // Fetch ALL entries (paginated if needed)
-      let allEntries: DashboardEntry[] = []
-      let from = 0
-      const pageSize = 1000
-
-      while (true) {
-        const { data } = await db
-          .from('kokkok_entries')
-          .select('id, sender_phone_hash, target_phone_hash, hint_text, matched, created_at')
-          .order('created_at', { ascending: false })
-          .range(from, from + pageSize - 1)
-
-        const chunk = (data as DashboardEntry[]) || []
-        allEntries = allEntries.concat(chunk)
-
-        if (chunk.length < pageSize) break
-        from += pageSize
-      }
-
-      setEntries(allEntries)
+      const res = await fetch('/api/get-dashboard')
+      const data = await res.json()
+      setEntries((data.entries as DashboardEntry[]) || [])
     } catch (err) {
       console.error('Failed to load dashboard data', err)
     } finally {

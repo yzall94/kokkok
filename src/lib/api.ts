@@ -1,68 +1,14 @@
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const IS_DEMO =
+  !process.env.NEXT_PUBLIC_TURSO_CONFIGURED ||
+  process.env.NEXT_PUBLIC_TURSO_CONFIGURED !== 'true'
 
-const IS_DEMO = !SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL'
+// ─── API call helper ─────────────────────────────────────────────────────────
 
-async function callEdgeFunction<T>(
-  fnName: string,
-  body: object
-): Promise<T> {
-  if (IS_DEMO) {
-    return mockEdgeFunction<T>(fnName, body)
-  }
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    throw new Error(data.error || `Error calling ${fnName}`)
-  }
-
-  return data as T
-}
-
-// Demo mode mock responses
-async function mockEdgeFunction<T>(
-  fnName: string,
-  _body?: object
-): Promise<T> {
-  void _body
-  await new Promise((r) => setTimeout(r, 800)) // Simulate latency
-
-  switch (fnName) {
-    case 'submit-kokkok':
-      return {
-        success: true,
-        matched: Math.random() > 0.7, // 30% chance of match in demo
-      } as T
-    case 'get-reveal':
-      return {
-        matched: true,
-        partner_name: '데모 사용자',
-        partner_phone: '010-1234-5678',
-        hint_text: '우리 자주 마주쳤었잖아요 ☕',
-      } as T
-    default:
-      throw new Error('Unknown function: ' + fnName)
-  }
-}
-
-// ─── Internal API call helper ────────────────────────────────────────────────
-
-async function callApi<T>(path: string, body: object): Promise<T> {
+async function callApi<T>(path: string, body?: object): Promise<T> {
   const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
   })
 
   const data = await res.json()
@@ -74,11 +20,11 @@ async function callApi<T>(path: string, body: object): Promise<T> {
   return data as T
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Verification ────────────────────────────────────────────────────────────
 
 export async function sendVerification(phone: string): Promise<{ success: boolean }> {
   if (IS_DEMO) {
-    await new Promise((r) => setTimeout(r, 500))
+    await new Promise(r => setTimeout(r, 500))
     return { success: true }
   }
   return callApi('/api/send-verification', { phone })
@@ -95,7 +41,7 @@ export async function verifyCode(
   code: string
 ): Promise<VerifyResult> {
   if (IS_DEMO) {
-    await new Promise((r) => setTimeout(r, 500))
+    await new Promise(r => setTimeout(r, 500))
     if (code === '000000') {
       return { verified: true, token: 'demo-token-' + Date.now() }
     }
@@ -103,6 +49,8 @@ export async function verifyCode(
   }
   return callApi('/api/verify-code', { phone, code })
 }
+
+// ─── Submit ──────────────────────────────────────────────────────────────────
 
 export interface SubmitParams {
   sender_name: string
@@ -120,22 +68,14 @@ export interface SubmitResult {
 }
 
 export async function submitKokkok(params: SubmitParams): Promise<SubmitResult> {
-  // 1. Supabase edge function: DB 저장 + 매칭 확인
-  const result = await callEdgeFunction<SubmitResult & { target_phone?: string }>('submit-kokkok', params)
-
-  // 2. Next.js API: SMS 발송 (reveal_token 사용)
-  try {
-    await callApi('/api/submit-kokkok', {
-      ...params,
-      reveal_token: result.reveal_token,
-    })
-  } catch {
-    // SMS 실패해도 콕콕 자체는 성공
-    console.error('SMS 발송 실패')
+  if (IS_DEMO) {
+    await new Promise(r => setTimeout(r, 800))
+    return { success: true, matched: Math.random() > 0.7 }
   }
-
-  return result
+  return callApi('/api/submit-kokkok', params)
 }
+
+// ─── Reveal ──────────────────────────────────────────────────────────────────
 
 export interface RevealData {
   matched: boolean
@@ -146,5 +86,41 @@ export interface RevealData {
 }
 
 export async function getReveal(token: string): Promise<RevealData> {
-  return callEdgeFunction('get-reveal', { token })
+  if (IS_DEMO) {
+    await new Promise(r => setTimeout(r, 800))
+    return {
+      matched: true,
+      partner_name: '데모 사용자',
+      partner_phone: '010-1234-5678',
+      hint_text: '우리 자주 마주쳤었잖아요 ☕',
+    }
+  }
+  return callApi('/api/get-reveal', { token })
+}
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+
+export async function getStats(): Promise<{ kokkoks: number; couples: number }> {
+  if (IS_DEMO) {
+    return { kokkoks: 13, couples: 4 }
+  }
+  return callApi('/api/get-stats')
+}
+
+// ─── Entries ─────────────────────────────────────────────────────────────────
+
+export interface EntryData {
+  id: string
+  hint_text: string | null
+  matched: boolean
+  created_at: string
+  reveal_token: string
+  partner_name?: string
+}
+
+export async function getEntries(phoneHash: string): Promise<{ received: EntryData[]; sent: EntryData[] }> {
+  if (IS_DEMO) {
+    return { received: [], sent: [] }
+  }
+  return callApi('/api/get-entries', { phone_hash: phoneHash })
 }

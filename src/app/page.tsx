@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { getSupabase } from '@/lib/supabase'
 import {
   sendVerification,
   verifyCode,
   submitKokkok,
-  type SubmitResult,
+  getStats,
+  getEntries,
+  type EntryData,
 } from '@/lib/api'
 import { getSession, saveSession, clearSession, type Session } from '@/lib/session'
 import { pageview, trackScreen } from '@/lib/ga'
@@ -20,15 +21,7 @@ interface ChatMessage {
   text: string
 }
 
-interface KkokkEntry {
-  id: string
-  hint_text: string | null
-  matched: boolean
-  created_at: string
-  reveal_token: string
-  partner_name?: string
-  partner_phone?: string
-}
+type KkokkEntry = EntryData
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -47,12 +40,7 @@ function nowTimeString(): string {
   return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 }
 
-const IS_DEMO =
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL === 'YOUR_SUPABASE_URL'
-
-const STATS_CAL_A = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_A || '10', 10)
-const STATS_CAL_B = parseInt(process.env.NEXT_PUBLIC_STATS_CAL_B || '3', 10)
+// (stats + entries are now fetched via API routes)
 
 const RELATIONSHIPS = [
   '같은 학교', '소꿉친구', '같은 직장',
@@ -145,42 +133,19 @@ function MessagesList({
   const [listLoading, setListLoading] = useState(false)
 
   useEffect(() => {
-    async function fetchStats() {
-      if (IS_DEMO) { setStats({ kokkoks: 3 + STATS_CAL_A, couples: 1 + STATS_CAL_B }); return }
-      try {
-        const db = getSupabase()
-        if (!db) return
-        const [kRes, cRes] = await Promise.all([
-          db.from('kokkok_entries').select('id', { count: 'exact', head: true }),
-          db.from('kokkok_entries').select('id', { count: 'exact', head: true }).eq('matched', true),
-        ])
-        setStats({
-          kokkoks: (kRes.count ?? 0) + STATS_CAL_A,
-          couples: Math.floor((cRes.count ?? 0) / 2) + STATS_CAL_B,
-        })
-      } catch { /* silent */ }
-    }
-    fetchStats()
+    getStats().then(setStats).catch(() => {})
   }, [])
 
   const loadEntries = useCallback(async () => {
     if (!session) return
     setListLoading(true)
-    if (IS_DEMO) { setReceivedList([]); setSentList([]); setListLoading(false); return }
     try {
       const encoder = new TextEncoder()
       const buf = await crypto.subtle.digest('SHA-256', encoder.encode(session.phone.replace(/-/g, '')))
       const phoneHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
-      const db = getSupabase()
-      if (!db) { setListLoading(false); return }
-      const [receivedRes, sentRes] = await Promise.all([
-        db.from('kokkok_entries').select('id, hint_text, matched, created_at, reveal_token, match_id')
-          .eq('target_phone_hash', phoneHash).order('created_at', { ascending: false }).limit(20),
-        db.from('kokkok_entries').select('id, hint_text, matched, created_at, reveal_token')
-          .eq('sender_phone_hash', phoneHash).order('created_at', { ascending: false }).limit(20),
-      ])
-      setReceivedList((receivedRes.data as KkokkEntry[]) || [])
-      setSentList((sentRes.data as KkokkEntry[]) || [])
+      const data = await getEntries(phoneHash)
+      setReceivedList(data.received)
+      setSentList(data.sent)
     } catch (err) { console.error('Failed to load entries', err) }
     finally { setListLoading(false) }
   }, [session])

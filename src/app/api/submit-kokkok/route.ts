@@ -1,58 +1,106 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SolapiMessageService } from 'solapi'
+import { getTurso } from '@/lib/turso'
+
+const SOLAPI_KEY = process.env.SOLAPI_API_KEY?.trim() ?? ''
+const SOLAPI_SECRET = process.env.SOLAPI_API_SECRET?.trim() ?? ''
+const SOLAPI_SENDER = process.env.SOLAPI_SENDER?.trim() ?? ''
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kokkok-nu.vercel.app'
+
+async function hashPhone(phone: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(phone))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function generateToken(): string {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { sender_name, sender_phone, target_phone, relationship, hint_text, reveal_token } = await request.json()
+    const body = await request.json()
+    const { sender_name, sender_phone, target_phone, relationship, hint_text } = body
 
-    if (!sender_phone || !target_phone || !reveal_token) {
-      return NextResponse.json({ error: '필수 정보가 없습니다.' }, { status: 400 })
+    if (!sender_name || !sender_phone || !target_phone) {
+      return NextResponse.json({ error: '필수 정보가 누락되었어요.' }, { status: 400 })
     }
 
-    const revealToken = reveal_token
+    const db = getTurso()
+    if (!db) {
+      return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
+    }
 
-    // SMS 발송 (타겟에게)
-    const API_KEY = process.env.SOLAPI_API_KEY?.trim()
-    const API_SECRET = process.env.SOLAPI_API_SECRET?.trim()
-    const SENDER = process.env.SOLAPI_SENDER?.trim()
+    const cleanSender = sender_phone.replace(/-/g, '')
+    const cleanTarget = target_phone.replace(/-/g, '')
+    const senderHash = await hashPhone(cleanSender)
+    const targetHash = await hashPhone(cleanTarget)
+    const revealToken = generateToken()
+    const entryId = generateToken().slice(0, 32)
+    const encryptedName = Buffer.from(sender_name).toString('base64')
 
-    if (API_KEY && API_SECRET && SENDER) {
-      const messageService = new SolapiMessageService(API_KEY, API_SECRET)
-      const cleanTarget = target_phone.replace(/-/g, '')
-      const revealUrl = `https://kokkok-nu.vercel.app/r/${revealToken}`
+    // Insert entry
+    await db.execute({
+      sql: `INSERT INTO kokkok_entries (id, sender_name_encrypted, sender_phone_hash, target_phone_hash, hint_text, relationship, reveal_token)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [entryId, encryptedName, senderHash, targetHash, hint_text || null, relationship || null, revealToken],
+    })
 
-      const opener = relationship
-        ? `${relationship}의 누군가가 당신을 좋아하고 있어요 🫣💗`
-        : '누가 몰래 당신을 좋아하고 있어요 🫣💗'
-      const lines = [opener, '']
-      if (hint_text) {
-        const preview = hint_text.length > 10 ? hint_text.slice(0, 10) + '…' : hint_text
-        lines.push(`🔖 힌트: ${preview}`)
-      }
-      lines.push(`\n👇 아래 링크에서 마음을 전한 분이 남긴 힌트를 확인해봐요`)
-      lines.push(revealUrl)
+    // Check for mutual match
+    const matchResult = await db.execute({
+      sql: `SELECT id FROM kokkok_entries
+            WHERE sender_phone_hash = ? AND target_phone_hash = ? AND matched = 0
+            LIMIT 1`,
+      args: [targetHash, senderHash],
+    })
 
-      const result = await messageService.send({
-        to: cleanTarget,
-        from: SENDER,
-        text: lines.join('\n'),
+    let matched = false
+    if (matchResult.rows.length > 0) {
+      matched = true
+      const matchId = matchResult.rows[0].id as string
+
+      await db.execute({
+        sql: `UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`,
+        args: [matchId, entryId],
       })
-      console.log('[submit-kokkok] SMS result:', JSON.stringify(result))
-
-      const failed = (result as { failedMessageList?: unknown[] }).failedMessageList
-      if (failed && failed.length > 0) {
-        console.error('[submit-kokkok] SMS failed:', JSON.stringify(failed))
-      }
-    } else {
-      console.log('[submit-kokkok] 환경변수 없음 — SMS 미발송. revealToken:', revealToken)
+      await db.execute({
+        sql: `UPDATE kokkok_entries SET matched = 1, match_id = ? WHERE id = ?`,
+        args: [entryId, matchId],
+      })
     }
 
-    void sender_name
+    // Send SMS to target
+    if (SOLAPI_KEY && SOLAPI_SECRET && SOLAPI_SENDER) {
+      try {
+        const messageService = new SolapiMessageService(SOLAPI_KEY, SOLAPI_SECRET)
+        const opener = relationship
+          ? `${relationship}의 누군가가 당신을 좋아하고 있어요 🫣💗`
+          : '누가 몰래 당신을 좋아하고 있어요 🫣💗'
+        const lines = [opener, '']
+        if (hint_text) {
+          const preview = hint_text.length > 10 ? hint_text.slice(0, 10) + '…' : hint_text
+          lines.push(`🔖 힌트: ${preview}`)
+        }
+        lines.push(`\n👇 확인하기`)
+        lines.push(`${SITE_URL}/r/${revealToken.slice(0, 16)}`)
 
-    return NextResponse.json({ success: true, matched: false, reveal_token: revealToken })
+        await messageService.send({
+          to: cleanTarget,
+          from: SOLAPI_SENDER,
+          text: lines.join('\n'),
+        })
+      } catch (smsErr) {
+        console.error('[submit-kokkok] SMS error:', smsErr)
+      }
+    }
+
+    return NextResponse.json({ success: true, matched, reveal_token: revealToken })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : '알 수 없는 오류'
-    console.error('[submit-kokkok error]', msg)
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    console.error('[submit-kokkok] error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '전송에 실패했어요.' },
+      { status: 500 }
+    )
   }
 }
