@@ -282,7 +282,12 @@ function MessagesList({
         ) : (
           <div className="landing-entries">
             {list.map(entry => (
-              <div key={entry.id} className={`landing-entry ${entry.matched ? 'matched' : ''}`}>
+              <button
+                key={entry.id}
+                type="button"
+                className={`landing-entry ${entry.matched ? 'matched' : ''}`}
+                onClick={() => window.location.href = `/reveal?t=${entry.reveal_token}`}
+              >
                 <div className="landing-entry-avi">{entry.matched ? '💗' : '💌'}</div>
                 <div className="landing-entry-body">
                   <div className="landing-entry-name">
@@ -293,12 +298,8 @@ function MessagesList({
                   {entry.hint_text && <div className="landing-entry-hint">&ldquo;{entry.hint_text}&rdquo;</div>}
                   <div className="landing-entry-time">{formatDate(entry.created_at)}</div>
                 </div>
-                {entry.matched ? (
-                  <span className="landing-match-pill">매칭됨</span>
-                ) : (
-                  <span className="landing-pending-pill">대기</span>
-                )}
-              </div>
+                <span className="landing-entry-chevron"><ChevronRight /></span>
+              </button>
             ))}
           </div>
         )}

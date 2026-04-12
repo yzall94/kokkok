@@ -1321,10 +1321,25 @@ textarea.ios-input-field {
   gap: 12px;
   padding: 14px 16px;
   transition: background 0.15s;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.landing-entry:active {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .landing-entry + .landing-entry {
   border-top: 0.5px solid var(--ios-separator);
+}
+
+.landing-entry-chevron {
+  color: var(--ios-label-tertiary);
+  flex-shrink: 0;
 }
 
 .landing-entry.matched {
