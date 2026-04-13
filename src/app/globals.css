@@ -1031,40 +1031,34 @@ textarea.ios-input-field {
 }
 
 /* ── Stats bar (top) ──────────────────────────────────────────────────────── */
-.landing-stats-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: 48px 0 16px;
+.landing-stats-banner {
+  margin: 40px 16px 8px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: rgba(255, 45, 85, 0.08);
+  padding: 8px 0;
 }
 
-.landing-stat-item {
+.landing-stats-banner-track {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
+  animation: stats-slide 6s ease-in-out infinite;
+  width: 200%;
 }
 
-.landing-stat-num {
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.landing-stats-banner-item {
+  width: 50%;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ios-kokkok-pink);
+  letter-spacing: -0.01em;
 }
 
-.landing-stat-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ios-label-secondary);
-  margin-top: 2px;
-}
-
-.landing-stat-dot {
-  font-size: 20px;
-  color: var(--ios-label-tertiary);
-  font-weight: 300;
-  padding-bottom: 12px;
+@keyframes stats-slide {
+  0%, 40% { transform: translateX(0); }
+  50%, 90% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
 }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────────── */

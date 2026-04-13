@@ -162,16 +162,11 @@ function MessagesList({
   return (
     <div className="ios-app landing-app">
       {/* ── Stats bar ───────────────────────────────────────────── */}
-      {stats && (
-        <div className="landing-stats-bar">
-          <div className="landing-stat-item">
-            <span className="landing-stat-num">{stats.kokkoks}</span>
-            <span className="landing-stat-label">콕콕</span>
-          </div>
-          <span className="landing-stat-dot">·</span>
-          <div className="landing-stat-item">
-            <span className="landing-stat-num">{stats.couples}</span>
-            <span className="landing-stat-label">커플 탄생</span>
+      {stats && (stats.kokkoks > 0 || stats.couples > 0) && (
+        <div className="landing-stats-banner">
+          <div className="landing-stats-banner-track">
+            <span className="landing-stats-banner-item">{stats.kokkoks}명이 콕콕 사용중!</span>
+            <span className="landing-stats-banner-item">{stats.couples}명의 커플이 탄생했어요!</span>
           </div>
         </div>
       )}
