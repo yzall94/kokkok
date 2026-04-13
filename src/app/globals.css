@@ -625,6 +625,14 @@ textarea.ios-input-field {
   font-size: 15px;
   color: var(--ios-label-secondary);
   text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.ios-sheet-notice {
+  font-size: 13px;
+  color: var(--ios-label-tertiary);
+  text-align: center;
   margin-bottom: 24px;
   line-height: 1.4;
 }
@@ -1496,6 +1504,13 @@ textarea.ios-input-field {
   font-size: 15px;
   color: var(--ios-label-secondary);
   line-height: 1.5;
+}
+
+.login-notice {
+  font-size: 13px;
+  color: var(--ios-label-tertiary);
+  line-height: 1.4;
+  margin-top: 8px;
 }
 
 .login-form {

@@ -64,11 +64,13 @@ export interface RevealData {
   partner_name?: string
   partner_phone?: string
   hint_text?: string
+  target_phone_masked?: string
+  role?: 'sender' | 'receiver'
   error?: string
 }
 
-export async function getReveal(token: string): Promise<RevealData> {
-  return callApi('/api/get-reveal', { token })
+export async function getReveal(token: string, role?: string): Promise<RevealData> {
+  return callApi('/api/get-reveal', { token, role })
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────

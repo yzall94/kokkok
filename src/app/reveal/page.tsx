@@ -84,33 +84,36 @@ function ErrorView({ message }: { message: string }) {
 
 // ─── Matched View ─────────────────────────────────────────────────────────────
 function MatchedView({ data }: { data: RevealData }) {
+  const isSender = data.role === 'sender'
+  const bubbleClass = isSender ? 'ios-bubble ios-bubble-sent' : 'ios-bubble ios-bubble-received'
+
   return (
     <div className="ios-chat-area">
       <div className="ios-chat-spacer" />
 
       <div className="ios-time-header">콕콕 매칭</div>
 
-      <div className="ios-bubble ios-bubble-received">
+      <div className={bubbleClass}>
         매칭됐어요! 💗
       </div>
 
-      <div className="ios-bubble ios-bubble-received">
+      <div className={bubbleClass}>
         서로 같은 마음이에요!
       </div>
 
-      <div className="ios-bubble ios-bubble-received" style={{ lineHeight: 1.6 }}>
+      <div className={bubbleClass} style={{ lineHeight: 1.6 }}>
         <div style={{ fontWeight: 600, marginBottom: 4 }}>상대방 정보</div>
         <div>이름: {data.partner_name}</div>
-        <div>연락처: <span style={{ color: 'var(--ios-blue)' }}>{data.partner_phone}</span></div>
+        {data.partner_phone && <div>연락처: <span style={{ color: 'var(--ios-blue)' }}>{data.partner_phone}</span></div>}
       </div>
 
       {data.hint_text && (
-        <div className="ios-bubble ios-bubble-received">
+        <div className={bubbleClass}>
           💭 &ldquo;{data.hint_text}&rdquo;
         </div>
       )}
 
-      <div className="ios-delivered" style={{ textAlign: 'left' }}>지금</div>
+      <div className="ios-delivered" style={{ textAlign: isSender ? 'right' : 'left' }}>지금</div>
 
       <div style={{ alignSelf: 'center', marginTop: 24 }}>
         <Link
@@ -118,7 +121,7 @@ function MatchedView({ data }: { data: RevealData }) {
           className="ios-share-btn"
           style={{ textDecoration: 'none', display: 'inline-flex', padding: '12px 24px', fontSize: 15, fontWeight: 600 }}
         >
-          나도 콕콕하러 가기
+          {isSender ? '돌아가기' : '나도 콕콕하러 가기'}
         </Link>
       </div>
     </div>
@@ -127,36 +130,61 @@ function MatchedView({ data }: { data: RevealData }) {
 
 // ─── Not Matched View ─────────────────────────────────────────────────────────
 function NotMatchedView({ data }: { data: RevealData }) {
+  const isSender = data.role === 'sender'
+  const bubbleClass = isSender ? 'ios-bubble ios-bubble-sent' : 'ios-bubble ios-bubble-received'
+
   return (
     <div className="ios-chat-area">
       <div className="ios-chat-spacer" />
 
       <div className="ios-time-header">콕콕</div>
 
-      <div className="ios-bubble ios-bubble-received" style={{ fontSize: 40, background: 'none', padding: '4px 0' }}>
-        💌
+      <div className={bubbleClass} style={{ fontSize: 40, background: 'none', padding: '4px 0' }}>
+        {isSender ? '📤' : '💌'}
       </div>
 
-      <div className="ios-bubble ios-bubble-received">
-        누군가 당신을 좋아해요
-      </div>
-
-      <div className="ios-bubble ios-bubble-received">
-        아직 상대방이 누군지 알 수 없어요.{'\n'}상대방도 당신에게 콕콕을 보내면 서로 연결돼요!
-      </div>
-
-      {data.hint_text && (
+      {isSender ? (
         <>
-          <div className="ios-bubble ios-bubble-received">
-            💭 힌트: &ldquo;{data.hint_text}&rdquo;
+          <div className={bubbleClass}>
+            {data.target_phone_masked || '상대방'}에게 콕콕을 보냈어요
           </div>
-          <div className="ios-bubble ios-bubble-system">
-            혹시 누군지 떠오르나요? 👀
+
+          <div className={bubbleClass}>
+            아직 매칭 대기 중이에요.{'\n'}상대방도 콕콕을 보내면 매칭돼요!
           </div>
+
+          {data.hint_text && (
+            <div className={bubbleClass}>
+              💭 내가 남긴 힌트: &ldquo;{data.hint_text}&rdquo;
+            </div>
+          )}
+
+          <div className="ios-delivered" style={{ textAlign: 'right' }}>지금</div>
+        </>
+      ) : (
+        <>
+          <div className={bubbleClass}>
+            누군가 당신을 좋아해요
+          </div>
+
+          <div className={bubbleClass}>
+            아직 상대방이 누군지 알 수 없어요.{'\n'}상대방도 당신에게 콕콕을 보내면 서로 연결돼요!
+          </div>
+
+          {data.hint_text && (
+            <>
+              <div className={bubbleClass}>
+                💭 힌트: &ldquo;{data.hint_text}&rdquo;
+              </div>
+              <div className="ios-bubble ios-bubble-system">
+                혹시 누군지 떠오르나요? 👀
+              </div>
+            </>
+          )}
+
+          <div className="ios-delivered" style={{ textAlign: 'left' }}>지금</div>
         </>
       )}
-
-      <div className="ios-delivered" style={{ textAlign: 'left' }}>지금</div>
 
       <div className="ios-bubble ios-bubble-system" style={{ marginTop: 16 }}>
         콕콕에서 같은 사람에게 마음을 전하면{'\n'}매칭이 성사돼요!
@@ -168,7 +196,7 @@ function NotMatchedView({ data }: { data: RevealData }) {
           className="ios-share-btn"
           style={{ textDecoration: 'none', display: 'inline-flex', padding: '12px 24px', fontSize: 15, fontWeight: 600 }}
         >
-          나도 콕콕하러 가기 💗
+          {isSender ? '돌아가기' : '나도 콕콕하러 가기 💗'}
         </Link>
       </div>
     </div>
@@ -179,6 +207,7 @@ function NotMatchedView({ data }: { data: RevealData }) {
 function RevealContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('t')
+  const role = searchParams.get('role') || undefined
 
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<RevealData | null>(null)
@@ -196,7 +225,7 @@ function RevealContent() {
       return
     }
 
-    getReveal(token)
+    getReveal(token, role)
       .then(result => {
         if (result.error) {
           setError('링크가 만료되었거나 존재하지 않아요.')
@@ -210,7 +239,7 @@ function RevealContent() {
       .finally(() => {
         setLoading(false)
       })
-  }, [token])
+  }, [token, role])
 
   if (loading) return <LoadingView />
   if (error) return <ErrorView message={error} />

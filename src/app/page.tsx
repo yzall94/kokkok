@@ -286,7 +286,7 @@ function MessagesList({
                 key={entry.id}
                 type="button"
                 className={`landing-entry ${entry.matched ? 'matched' : ''}`}
-                onClick={() => window.location.href = `/reveal?t=${entry.reveal_token}`}
+                onClick={() => window.location.href = `/reveal?t=${entry.reveal_token}${tab === 'sent' ? '&role=sender' : ''}`}
               >
                 <div className="landing-entry-avi">{entry.matched ? '💗' : '💌'}</div>
                 <div className="landing-entry-body">
@@ -483,6 +483,7 @@ function LoginPage({
           <div className="login-icon"><KokkokLogo size={48} /></div>
           <h2 className="login-title">본인 확인</h2>
           <p className="login-subtitle">받은 콕콕을 확인하려면<br />본인 인증이 필요해요</p>
+          <p className="login-notice">내 번호는 상대방에게 공개되지 않아요.<br />본인 확인 용도로만 사용돼요.</p>
         </div>
 
         {!codeSent ? (
@@ -859,6 +860,7 @@ function VerificationSheet({
         <div className="ios-sheet-handle" />
         <h2 className="ios-sheet-title">본인 확인</h2>
         <p className="ios-sheet-subtitle">메시지를 보내기 전에<br />본인 확인이 필요해요</p>
+        <p className="ios-sheet-notice">내 번호는 상대방에게 공개되지 않아요.<br />본인 확인 용도로만 사용돼요.</p>
         {!codeSent ? (
           <>
             <div className="ios-form-group">
